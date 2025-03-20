@@ -1,17 +1,28 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, Query, status, Depends
+from typing import Dict, List
 from db.schemas.user import user_schema, users_schema
 from db.schemas.new import new_schema, news_schema
 from db.schemas.company import company_schema, companies_schema
 from db.models.user import User, SubscriptionRequest, SourcesRequest
 from db.models.news import News
+from send_email import MailSender
+from db.models.contact_mail import ContactMail
 from db.models.company import Company
 from db.models.login_user import LoginData
+from db.models.chart import Chart
 from db.client import db_client
 from bson import ObjectId
 import bcrypt
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from fastapi.security import OAuth2PasswordBearer
+
+SMTP_SERVER = "smtp.gmail.com"  # Cambia esto según tu proveedor de correo
+SMTP_PORT = 587  # Normalmente 587 para TLS o 465 para SSL
+SMTP_USER = "notstartupanymore@gmail.com"  # Tu dirección de correo
+SMTP_PASSWORD = "hlfm inpu bzel zuuk"  # Usa variables de entorno o un gestor seguro
+
+cartero = MailSender(SMTP_SERVER, SMTP_PORT, SMTP_USER, SMTP_PASSWORD )
 
 # Configuración de JWT
 JWT_SECRET = "e4606fc05c3968741c23fd671fcb3e0f0619c8cc55c0dc063e2f14fe368fd22b"
@@ -207,6 +218,35 @@ async def update_user_sources(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error en el servidor: {str(e)}")
 
+@router.post("/contactmail")
+async def send_contact_email(contact: ContactMail):
+
+    cartero.contact_email("pablomoreno37185@gmail.com", contact.name, contact.mail, contact.message )
+
+@router.get("/charts")
+async def get_chart_data(
+    dataType: str = Query(...),
+    companyType: str = Query(...),
+    timePeriod: str = Query(...)
+) -> List[Chart]:
+    """
+    Obtiene los datos para el gráfico según los parámetros de selección.
+    """
+    print(f"Parámetros recibidos: data_type={dataType}, company_type={companyType}, time_period={timePeriod}")
+    data = []
+    if dataType == "empresasCreadas":
+        if companyType == "todos":
+            data = [{"label": "Tecnología", "value": 10}, {"label": "Finanzas", "value": 5}]
+        elif companyType == "tecnologia":
+            data = [{"label": "Tecnología", "value": 8}]
+        else:
+            raise HTTPException(status_code=400, detail="Tipo de empresa no válido")
+    elif dataType == "crecimientoEmpleados":
+        data = [{"label": "2023", "value": 150}, {"label": "2024", "value": 200}]
+    else:
+        raise HTTPException(status_code=400, detail="Tipo de datos no válido")
+    print(f"Datos devueltos: {data}")
+    return data
 
 def search_user(field: str, key):
     try:

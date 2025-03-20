@@ -1,14 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DataSelection from './DataSelection';
+import ChartEvaluation from './Chart_Evaluation';
+
+type NewsItem = {id: string; company: string; title: string; topic: string; details: string}
+type CompaniesItem = {id: string; name: string; type: string; details: string}
+type UserItem = {username: string; name: string; surname: string; email: string; subscriptions: string[]; sources: string[];}
+type DataChart ={label: string; value: number}
 
 const Profile: React.FC = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [userData, setUserData] = useState<{ username: string; name: string; surname: string; email: string; subscriptions: string[]; sources: string[]; } | null>(null);
+    const [userData, setUserData] = useState<UserItem | null>(null);
     const [showSubscriptionOptions, setShowSubscriptionOptions] = useState(false);
     const [showSourcesOptions, setShowSourcesOptions] = useState(false);
     const [selectedSources, setSelectedSources] = useState<string[]>([]);
-    const [news, setNews] = useState<Array<{id: string; company: string; title: string; topic: string; details: string}>>([]);
-    const [companies, setCompanies] = useState<Array<{id: string; name: string; type: string; details: string}>>([]);
+    const [news, setNews] = useState<NewsItem[]>([]);
+    const [companies, setCompanies] = useState<CompaniesItem[]>([]);
+    const [companyTypes, setCompanyTypes] = useState<string[]>([]);
+    const [selectedCompanyType, setSelectedCompanyType] = useState<string | null>(null);
+    const [chartData, setChartData] = useState<any>(null);
+
 
     const sourcesOptions = [
         "El Economista",
@@ -50,10 +61,18 @@ const Profile: React.FC = () => {
                 throw new Error(errorData.detail || 'Error al actualizar la suscripción');
             }
 
-            setUserData(prevUserData => ({
-                ...(prevUserData as any), 
-                subscriptions: [...(prevUserData as any).subscriptions, subscription]
-            }));
+            setUserData(prevUserData => {
+                if (!prevUserData) return null; // Handle potential null case
+    
+                const currentSubscriptions = prevUserData.subscriptions || [];
+                if (!currentSubscriptions.includes(subscription)) { // Check if subscription is already present
+                    return {
+                        ...prevUserData,
+                        subscriptions: [...currentSubscriptions, subscription]
+                    };
+                }
+                return prevUserData; // Return the previous state if the subscription is already present
+            });
 
             setShowSubscriptionOptions(false); 
 
@@ -85,8 +104,8 @@ const Profile: React.FC = () => {
             }
 
             setUserData(prevUserData => ({
-                ...(prevUserData as any),
-                subscriptions: (prevUserData as any).subscriptions.filter((s: string) => s !== subscription)
+                ...(prevUserData as UserItem),
+                subscriptions: (prevUserData as UserItem).subscriptions.filter((s: string) => s !== subscription)
             }));
 
         } catch (error) {
@@ -125,7 +144,7 @@ const Profile: React.FC = () => {
             }
 
             setUserData(prevUserData => ({
-                ...(prevUserData as any),
+                ...(prevUserData as UserItem),
                 sources: sources, // Actualizar el estado local con las fuentes actualizadas
             }));
         } catch (error) {
@@ -133,7 +152,34 @@ const Profile: React.FC = () => {
         }
     };
 
-
+    const handleGenerateChart = async (params: any) => {
+        console.log('handleGenerateChart ejecutándose con parámetros:', params);
+    
+        try {
+            // Construye la URL con parámetros de consulta
+            const urlParams = new URLSearchParams(params);
+            const url = `http://localhost:8000/users/charts?${urlParams.toString()}`;
+    
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
+    
+            if (!response.ok) {
+                console.error('Error en la respuesta del backend:', response);
+                throw new Error('Error al obtener los datos del gráfico');
+            }
+    
+            const data:DataChart[] = await response.json();
+            console.log('Datos recibidos del backend:', data);
+            setChartData(data);
+        } catch (error) {
+            console.error('Error al generar el gráfico:', error);
+        }
+    };
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -158,7 +204,7 @@ const Profile: React.FC = () => {
                     return;
                 }
 
-                const userData = await response.json();
+                const userData: UserItem = await response.json();
                 setUserData(userData);
                 if(userData && userData.sources){
                     setSelectedSources(userData.sources);
@@ -178,7 +224,7 @@ const Profile: React.FC = () => {
                     throw new Error('Error al obtener las noticias')
                 }
 
-                const newsData = await response.json()
+                const newsData: NewsItem[] = await response.json()
                 setNews(newsData)
             } catch(error){
                 console.error('Error al obtener las noticias')
@@ -193,8 +239,12 @@ const Profile: React.FC = () => {
                     throw new Error('Error al obtener las empresas')
                 }
 
-                const companiesData = await response.json()
+                const companiesData: CompaniesItem[] = await response.json()
                 setCompanies(companiesData)
+
+                const uniqueTypes = Array.from(new Set(companiesData.map(company => company.type)))
+                setCompanyTypes(uniqueTypes)
+
             } catch(error){
                 console.error('Error al obtener las empresas')
             }
@@ -221,60 +271,74 @@ const Profile: React.FC = () => {
         return <div>Cargando...</div>;
     }
 
+    const filteredCompanies = selectedCompanyType ? companies.filter(company => company.type === selectedCompanyType): companies;
+
     return (
-        <div className="flex flex-col h-screen">
-            <div className="bg-gray-100 p-4 flex justify-between items-center">
+        <div className="flex flex-col h-screen bg-gray-100">
+            <header className="bg-white shadow-lg p-4 flex justify-between items-center">
                 <div className="relative">
-                    <button onClick={toggleDropdown} className="flex items-center cursor-pointer">
+                    <button onClick={toggleDropdown} className="flex items-center gap-2 cursor-pointer text-gray-800 font-semibold hover:text-blue-600 transition-all duration-300">
                         <span className="material-symbols-outlined">Usuario: </span>
-                        <span className="ml-2 font-bold">{userData?.username}</span> 
+                        <span className="font-bold">{userData?.username}</span> 
                     </button>
                     {isDropdownOpen && (
                         <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg left-8 z-10">
-                            <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ajustes</a>
-                            <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Mi perfil</a>
+                            <a href="#" className="block px-4 py-2 text-sm hover:bg-gray-100">Ajustes</a>
+                            <a href="#" className="block px-4 py-2 text-sm hover:bg-gray-100">Mi perfil</a>
                         </div>
                     )}
                 </div>
-            </div>
+            </header>
 
             <div className="flex-grow p-8 bg-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
 
 
-
-
-                <div>
-                <h3 className="font-bold mb-2 bg-white top-0 p-2 z-10">Mis suscripciones</h3>
+                <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
+                <h3 className="font-bold mb-4 text-lg text-gray-700">Mis suscripciones</h3>
                     <div className="bg-white p-4 rounded-md shadow-md max-h-64 h-64 overflow-y-auto relative">                       
                         {userData && userData.subscriptions && userData.subscriptions.length > 0 ? (
                             <ul className="list-disc pl-5">
                                 {userData.subscriptions.map((subscription, index) => (
-                                    <li key={index}>
-                                        {subscription}
-                                        <button onClick={() => handleSubscriptionRemove(subscription)} className="ml-2">
-                                            <span className="text-red-500 hover:bg-gray-100 cursor-pointer">x</span> 
+                                    <li key={index} className="flex justify-between items-center py-1">
+                                        <span className="text-gray-800">{subscription}</span>
+                                        <button onClick={() => handleSubscriptionRemove(subscription)} className="ml-2 text-red-500 hover:text-red-700 transition-all cursor-pointer">
+                                            x
                                         </button>
                                     </li>
                                 ))}
                             </ul>
                         ) : (
-                            <p>No tienes suscripciones.</p>
+                            <p className="text-gray-600">No tienes suscripciones.</p>
                         )}
                         <button
-                            className="bg-gray-200 hover:bg-gray-300 rounded-full h-8 w-8 flex items-center justify-center absolute bottom-2 right-2 cursor-pointer"
+                            className="bg-blue-100 hover:bg-blue-200 text-white rounded-full h-8 w-8 flex items-center justify-center absolute bottom-2 right-2 transition-all transform hover:scale-110 cursor-pointer"
                             onClick={toggleSubscriptionOptions}
                         >
-                            <span className="text-gray-600">+</span>
+                            <span className="text-xl text-gray-600">+</span>
                         </button>
 
                         {showSubscriptionOptions && (
-                            <div className="absolute bottom-10 right-0 bg-white rounded-md shadow-lg w-48 max-h-48 overflow-y-auto z-10">
+                            <div className="absolute bottom-10 right-0 bg-white rounded-md shadow-lg w-64 max-h-48 overflow-y-auto transition-all">
+                                <select
+                                    className="w-full p-2 border-b text-sm"
+                                    value = {selectedCompanyType || ""}
+                                    onChange={(e) => setSelectedCompanyType(e.target.value || null)}
+                                >
+                                    <option value=""> Todos los tipos </option>
+
+                                    {companyTypes.map((type, index) =>(
+
+                                    <option key={index} value={type}>{type}</option>
+                                    ))}
+
+                                </select>
+
                                 <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick('Creación de una nueva empresa')}>Creación de una nueva empresa</a>
                                 <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick('Contratación abundante de empleados por parte de una empresa')}>Contratación abundante de empleados por parte de una empresa</a>
                                 <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick('Cambio de sede de una empresa')}>Cambio de sede de una empresa</a>
 
-                                {companies.map((company) => (
+                                {filteredCompanies.map((company) => (
                                     <a key={company.id} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick(company.name)}>
                                         {company.name}
                                     </a>
@@ -284,26 +348,26 @@ const Profile: React.FC = () => {
                     </div>
                 </div>
                 
-                <div>
-                    <h3 className="font-bold mb-2 bg-white top-0 p-2 z-10">Notificaciones</h3>
-                    <div className="bg-white p-4 rounded-md shadow-md max-h-64 h-64 overflow-y-auto relative">
+                <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
+                    <h3 className="font-bold mb-4 text-lg text-gray-700">Notificaciones</h3>
+                    <div className="max-h-64 overflow-y-auto">
                         
 
                     </div>             
                 </div>
 
-                <div>
-                    <h3 className="font-bold mb-2 bg-white top-0 p-2 z-10">Noticias de interés</h3>
-                        <div className="bg-white p-4 rounded-md shadow-md max-h-64 overflow-y-auto relative">
+                <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
+                    <h3 className="font-bold mb-4 text-lg text-gray-700">Noticias de interés</h3>
+                        <div className="max-h-64 overflow-y-auto">
                             {(() => {
                                 const filteredNews = news.filter(item => userData?.subscriptions.includes(item.topic) || userData?.subscriptions.includes(item.company)); // Filtrar noticias relevantes
 
                                 return filteredNews.length > 0 ? (
                                     <ul className="list-disc pl-5">
                                         {filteredNews.map((newsItem) => (
-                                            <li key={newsItem.id}>
+                                            <li key={newsItem.id} className="pb-2">
                                                 <div>
-                                                    <p className="font-bold">{newsItem.title}</p>
+                                                    <p className="font-semibold">{newsItem.title}</p>
                                                     <p className="text-gray-600 text-sm">Empresa: {newsItem.company}</p>
                                                     <p className="text-gray-600 text-sm">Detalles: {newsItem.details}</p>
                                                 </div>
@@ -311,22 +375,21 @@ const Profile: React.FC = () => {
                                         ))}
                                     </ul>
                                 ) : (
-                                    <p>No hay noticias de interés.</p> // Mostrar mensaje si no hay coincidencias con las suscripciones
+                                    <p className="text-gray-600">No hay noticias de interés.</p> // Mostrar mensaje si no hay coincidencias con las suscripciones
                                 );
                             })()}
                         </div>
                 </div>
 
                     
-                <div>
-                    <h3 className="font-bold mb-2 bg-white top-0 p-2 z-10">Fuentes de Información</h3>
+                <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
+                    <h3 className="font-bold mb-4 text-lg text-gray-700">Fuentes de Información</h3>
+                    <button onClick={toggleSourcesOptions} className="bg-blue-400 hover:bg-blue-500 text-white rounded-md px-4 py-2 w-full text-left transition-all cursor-pointer">
+
+                        {showSourcesOptions ? "Cerrar Fuentes" : "Seleccionar Fuentes"}
+                    </button>
+
                     <div className="bg-white p-4 rounded-md shadow-md max-h-64 h-64 overflow-y-auto relative">
-
-                        <button onClick={toggleSourcesOptions} className="bg-gray-200 hover:bg-gray-300 rounded-md px-4 py-2 w-full text-left">
-
-                            {showSourcesOptions ? "Cerrar Fuentes" : "Seleccionar Fuentes"}
-                        </button>
-
                         {showSourcesOptions && (
                             <div className="absolute top-12 left-0 bg-white border rounded-md shadow-lg w-64 p-2 max-h-48 overflow-y-auto z-10">
                                 {sourcesOptions.map((source, index) => (
@@ -347,7 +410,7 @@ const Profile: React.FC = () => {
                                 <p className="font-semibold">Fuentes seleccionadas:</p>
                                 <ul className="list-disc pl-5">
                                     {selectedSources.map((source, index) => (
-                                        <li key={index}>{source}</li>
+                                        <li key={index} className="test-sm">{source}</li>
                                     ))}
                                 </ul>
                             </div>
@@ -357,7 +420,12 @@ const Profile: React.FC = () => {
                 </div>
 
                 </div>
+                <div className="mt-8">
+                    <DataSelection onGenerate={handleGenerateChart} />
+                    {chartData && <ChartEvaluation data={chartData} />}
+                </div>
             </div>
+            
         </div>
     );
 };
