@@ -348,16 +348,9 @@ const Profile: React.FC = () => {
                     </div>
                 </div>
                 
-                <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
-                    <h3 className="font-bold mb-4 text-lg text-gray-700">Notificaciones</h3>
-                    <div className="max-h-64 overflow-y-auto">
-                        
-
-                    </div>             
-                </div>
 
                 <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
-                    <h3 className="font-bold mb-4 text-lg text-gray-700">Noticias de interés</h3>
+                    <h3 className="font-bold mb-4 text-lg text-gray-700">Noticias relacionadas con mis suscripciones</h3>
                         <div className="max-h-64 overflow-y-auto">
                             {(() => {
                                 const filteredNews = news.filter(item => userData?.subscriptions.includes(item.topic) || userData?.subscriptions.includes(item.company)); // Filtrar noticias relevantes

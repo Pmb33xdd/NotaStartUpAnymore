@@ -1,0 +1,26 @@
+# 🔹 Ignorar archivos de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.env
+.DS_Store
+
+# 🔹 Ignorar dependencias de Node.js (React)
+node_modules/
+dist/
+build/
+.npm/
+.npmrc
+
+# 🔹 Archivos de configuración
+*.log
+*.sqlite3
+*.env.local
+
+# Ignorar archivos de configuración sensibles
+.env
+
+#Ignorar mondongo
+mongo/

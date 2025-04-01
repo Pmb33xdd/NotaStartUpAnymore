@@ -10,17 +10,23 @@ from db.models.contact_mail import ContactMail
 from db.models.company import Company
 from db.models.login_user import LoginData
 from db.models.chart import Chart
+import os
 from db.client import db_client
 from bson import ObjectId
 import bcrypt
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from fastapi.security import OAuth2PasswordBearer
+from dotenv import load_dotenv
 
-SMTP_SERVER = "smtp.gmail.com"  # Cambia esto según tu proveedor de correo
-SMTP_PORT = 587  # Normalmente 587 para TLS o 465 para SSL
-SMTP_USER = "notstartupanymore@gmail.com"  # Tu dirección de correo
-SMTP_PASSWORD = "hlfm inpu bzel zuuk"  # Usa variables de entorno o un gestor seguro
+load_dotenv()
+
+
+API_KEY = os.getenv("API_KEY")
+SMTP_SERVER = os.getenv("SMTP_SERVER")
+SMTP_PORT = os.getenv("SMTP_PORT") 
+SMTP_USER = os.getenv("SMTP_USER")
+SMTP_PASSWORD = os.getenv("SMPT_PASSWORD")
 
 cartero = MailSender(SMTP_SERVER, SMTP_PORT, SMTP_USER, SMTP_PASSWORD )
 
@@ -67,15 +73,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 @router.get("/", response_model=list[User])
 async def users():
-    return users_schema(db_client.local.users.find())
+    return users_schema(db_client.users.find())
 
 @router.get("/news", response_model=list[News])
 async def news():
-    return news_schema(db_client.local.news.find())
+    return news_schema(db_client.news.find())
 
 @router.get("/companies", response_model=list[Company])
 async def news():
-    return companies_schema(db_client.local.companies.find())
+    return companies_schema(db_client.companies.find())
 
 """
 @router.get("/{id}")
@@ -97,8 +103,8 @@ async def user(user: User):
         del user_dict["id"]
         user_dict["password"] = hashed_password
 
-        id = db_client.local.users.insert_one(user_dict).inserted_id
-        new_user = user_schema(db_client.local.users.find_one({"_id": id}))
+        id = db_client.users.insert_one(user_dict).inserted_id
+        new_user = user_schema(db_client.users.find_one({"_id": id}))
         return User(**new_user)
     except Exception as e:
         raise HTTPException(
@@ -142,7 +148,7 @@ async def user(user: User):
     user_dict = dict(user)
     del user_dict["id"]
     try:
-        db_client.local.users.find_one_and_replace(
+        db_client.users.find_one_and_replace(
             {"_id": ObjectId(user.id)}, user_dict
         )
     except:
@@ -151,7 +157,7 @@ async def user(user: User):
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def user(id: str):
-    found = db_client.local.users.find_one_and_delete({"_id": ObjectId(id)})
+    found = db_client.users.find_one_and_delete({"_id": ObjectId(id)})
     if not found:
         return {"error": "No se ha eliminado el usuario"}
     
@@ -173,7 +179,7 @@ async def update_user_me(
         elif action == "remove" and subscription in user_subscriptions:
             user_subscriptions.remove(subscription)
 
-        result = db_client.local.users.update_one(
+        result = db_client.users.update_one(
             {"_id": ObjectId(current_user.id)},
             {"$set": {"subscriptions": user_subscriptions}}
         )
@@ -199,7 +205,7 @@ async def update_user_sources(
         print(f"Las fuentes antiguas de este usuario son {current_user.sources}")
         print(f"Las fuentes nuevas de este usuario son {sources_request.sources}")
 
-        result = db_client.local.users.update_one(
+        result = db_client.users.update_one(
             {"_id": ObjectId(current_user.id)},
             {"$set": {"sources": sources}}
         )
@@ -250,7 +256,7 @@ async def get_chart_data(
 
 def search_user(field: str, key):
     try:
-        user_data = db_client.local.users.find_one({field: key})
+        user_data = db_client.users.find_one({field: key})
         if user_data:  # Verifica si se encontró un usuario
             user = user_schema(user_data)
             return User(**user)
