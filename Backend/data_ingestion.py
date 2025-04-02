@@ -19,7 +19,7 @@ API_KEY = os.getenv("API_KEY")
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = os.getenv("SMTP_PORT") 
 SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASSWORD = os.getenv("SMPT_PASSWORD")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 
 cartero = MailSender(SMTP_SERVER, SMTP_PORT, SMTP_USER, SMTP_PASSWORD )
 
@@ -41,21 +41,21 @@ class Ingestion():
     def insert_db_news(self, noticia: News):
         news_dict = dict(noticia)
         del news_dict["id"]
-        db_client.local.news.insert_one(news_dict)
+        db_client.news.insert_one(news_dict)
 
     def insert_db_company(self, company: Company):
         company_dict = dict(company)
         del company_dict["id"]
-        db_client.local.companies.insert_one(company_dict)
+        db_client.companies.insert_one(company_dict)
 
     def search_company(self, company_name: str) -> Company | None:
-        company_data = db_client.local.companies.find_one({"name": company_name})
+        company_data = db_client.companies.find_one({"name": company_name})
         if company_data:
             return Company(**company_data)
         return None
     
     def send_newsletters(self, news_list: list[News]):
-        users_cursor = db_client.local.users.find()
+        users_cursor = db_client.users.find()
         users = users_schema(users_cursor)
 
         for user in users:
@@ -78,7 +78,7 @@ class Ingestion():
         return None
     
     def data_ingestion_rss(self):
-        for entry in self.feed.entries[:5]:
+        for entry in self.feed.entries[:1]:
             print(f"Noticia {self.contador}")
             titulo = entry.title
             print(titulo)
@@ -99,8 +99,9 @@ class Ingestion():
                         "sin ningún texto adicional ni comillas triples:\n\n"
                         "Ejemplo:\n"
                         '{ "noticia": "Vega Chargers cierra una ronda de cinco millones con sus socios", '
-                        '"tema":"ninguno", "empresa": "Vega Chargers (si se trata de varias las añadiremos seguidas de esta con , de la forma: "Empresa1, Empresa2, Empresa3, etc") ", "tipo_empresa": "Desconocido", "detalles": "ninguno", "razones":"No está relacionada con ninguno de los temas que buscamos"}\n\n'
+                        '"tema":"ninguno", "empresa": "Vega Chargers", "tipo_empresa": "Desconocido", "detalles": "ninguno", "razones":"No está relacionada con ninguno de los temas que buscamos"}\n\n'
                         "Los detalles serán una breve cadena de texto. "
+                        '"En el campo empresa si se trata de varias las añadiremos seguidas de esta con , de la forma: "Empresa1, Empresa2, Empresa3, etc")"'
                         "En el campo \"tipo_empresa\" incluiremos el sector al que se dedica, Ejemplos:\"Hardware\", \"Agricola\", \"Ganaderia\", \"Textil\", \"Alimentacion\", \"Software\", \"Entretenimiento\", etc. En caso de que no haya una evidencia y no podamos saber esto con exactitud este campo será \"Desconocido\" "
                         "El cerrar una ronda de cierta cantidad de millones, invertir millones, ganar o recaudar cierta cantidad de beneficios, etc, no se considerará como ninguno de los tres temas que estamos buscando y el tema seleccionado será \"ninguno\""
                         "En caso de que no haya ninguna empresa relacionada, el campo empresa será \"ninguna\". Responde únicamente con el JSON válido."
@@ -239,7 +240,7 @@ class Ingestion():
                     company_type = json_response.get("tipo_empresa", "Desconocido")
                     existing_company = self.search_company(company_name)
 
-                    if not existing_company and (company_name != "Desconocida" and company_name != "ninguna"):
+                    if not existing_company and (company_name != "Desconocida" and company_name != "ninguna" and tema !="ninguno"):
                         new_company = Company(name=company_name, type=company_type, details="Desconocidos")
                         self.insert_db_company(new_company)
                         print(f"Compañía '{company_name}' insertada en la base de datos. \n")

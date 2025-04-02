@@ -26,13 +26,13 @@ API_KEY = os.getenv("API_KEY")
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = os.getenv("SMTP_PORT") 
 SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASSWORD = os.getenv("SMPT_PASSWORD")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 
 cartero = MailSender(SMTP_SERVER, SMTP_PORT, SMTP_USER, SMTP_PASSWORD )
 
 # Configuración de JWT
-JWT_SECRET = "e4606fc05c3968741c23fd671fcb3e0f0619c8cc55c0dc063e2f14fe368fd22b"
-ALGORITHM = "HS256"
+JWT_SECRET = os.getenv("JWT_SECRET")
+ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 router = APIRouter(

@@ -36,7 +36,7 @@ async def root():
 @app.get("/url")
 async def url():
     return { "url_curso":"https://mouredev.com/python" }
-
+"""
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))  # Render asigna un puerto, pero 8000 es el default en local
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)"""
