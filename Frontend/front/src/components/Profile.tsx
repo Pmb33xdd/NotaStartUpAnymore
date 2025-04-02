@@ -47,7 +47,7 @@ const Profile: React.FC = () => {
                 return;
             }
 
-            const response = await fetch('http://localhost:8000/users/me', { 
+            const response = await fetch('https://notastartupanymore.onrender.com/users/me', { 
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ const Profile: React.FC = () => {
                 return;
             }
 
-            const response = await fetch('http://localhost:8000/users/me', {
+            const response = await fetch('https://notastartupanymore.onrender.com/users/me', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ const Profile: React.FC = () => {
                 return;
             }
 
-            const response = await fetch('http://localhost:8000/users/me/sources', { // Nueva ruta en el backend
+            const response = await fetch('https://notastartupanymore.onrender.com/users/me/sources', { // Nueva ruta en el backend
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ const Profile: React.FC = () => {
         try {
             // Construye la URL con parámetros de consulta
             const urlParams = new URLSearchParams(params);
-            const url = `http://localhost:8000/users/charts?${urlParams.toString()}`;
+            const url = `https://notastartupanymore.onrender.com/users/charts?${urlParams.toString()}`;
     
             const response = await fetch(url, {
                 method: 'GET',
@@ -190,7 +190,7 @@ const Profile: React.FC = () => {
                     return;
                 }
 
-                const response = await fetch('http://localhost:8000/users/me', {
+                const response = await fetch('https://notastartupanymore.onrender.com/users/me', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -219,7 +219,7 @@ const Profile: React.FC = () => {
 
         const fetchNews = async () => {
             try{
-                const response = await fetch ('http://localhost:8000/users/news');
+                const response = await fetch ('https://notastartupanymore.onrender.com/users/news');
                 if(!response.ok){
                     throw new Error('Error al obtener las noticias')
                 }
@@ -234,7 +234,7 @@ const Profile: React.FC = () => {
 
         const fetchCompanies = async () =>{
             try{
-                const response = await fetch('http://localhost:8000/users/companies');
+                const response = await fetch('https://notastartupanymore.onrender.com/users/companies');
                 if(!response.ok){
                     throw new Error('Error al obtener las empresas')
                 }

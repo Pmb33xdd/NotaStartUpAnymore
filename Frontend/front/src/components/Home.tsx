@@ -28,7 +28,7 @@ const Home: React.FC = () => {
         setResponse("");
 
         try {
-            const res = await fetch("http://localhost:8000/users/contactmail", {
+            const res = await fetch("https://notastartupanymore.onrender.com/users/contactmail", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),

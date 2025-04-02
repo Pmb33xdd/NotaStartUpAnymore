@@ -23,7 +23,7 @@ const Register: React.FC = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:8000/users/', {
+            const response = await fetch('https://notastartupanymore.onrender.com/users/users/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

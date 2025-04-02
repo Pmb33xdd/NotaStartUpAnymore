@@ -25,7 +25,7 @@ export const AuthProvider: React.FC<{ children?: React.ReactNode }> = ({ childre
             const token = localStorage.getItem('token');
             if (token) {
                 try {
-                    const response = await fetch('http://localhost:8000/users/me', {
+                    const response = await fetch('https://notastartupanymore.onrender.com/users/me', {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
