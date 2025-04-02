@@ -11,7 +11,7 @@ origins = [
     "http://localhost:5173",  # Reemplaza 3000 con el puerto correcto de React
     "http://localhost",       # Incluye localhost sin puerto
     "http://127.0.0.1:5173", # Incluye 127.0.0.1 por si acaso
-    "https://notastartupanymore-front.onrender.com/"
+    "https://notastartupanymore-front.onrender.com"
     # Puedes añadir otros orígenes aquí si es necesario (ej: tu dominio en producción)
 ]
 
