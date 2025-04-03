@@ -279,13 +279,13 @@ def get_chart_data(
         # Si no es "ultimoAno" ni "ultimoMes", no filtramos por fecha
         date_filter = {}
     if dataType == "empresasCreadas":
-        generar_datos_chart("Creación de una nueva empresa", companyType, date_filter)
+        data = generar_datos_chart("Creación de una nueva empresa", companyType, date_filter)
 
     elif  dataType == "cambioSede":
-        generar_datos_chart("Cambio de sede de una nueva empresa", companyType, date_filter)
+        data = generar_datos_chart("Cambio de sede de una nueva empresa", companyType, date_filter)
 
     elif dataType == "crecimientoEmpleados":
-        generar_datos_chart("Contratación abundante de empleados por parte de una empresa", companyType, date_filter)
+        data = generar_datos_chart("Contratación abundante de empleados por parte de una empresa", companyType, date_filter)
         
     else:
         raise HTTPException(status_code=400, detail="Tipo de datos no válido")
@@ -324,3 +324,5 @@ def generar_datos_chart(type: str, companyType: str, date_filter):
      
         # Crear la respuesta
         data = [{"label": tipo, "value": cantidad} for tipo, cantidad in type_counts.items()]
+
+        return data
