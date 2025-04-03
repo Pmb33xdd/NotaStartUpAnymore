@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataSelection from './DataSelection';
 import ChartEvaluation from './Chart_Evaluation';
-import { List } from 'postcss/lib/list';
+
 
 type NewsItem = {id: string; company: string; title: string; topic: string; details: string}
 type CompaniesItem = {id: string; name: string; type: string; details: string}
