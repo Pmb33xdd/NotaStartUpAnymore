@@ -265,7 +265,7 @@ def get_chart_data(
             # Truncar la hora a las 00:00:00 para solo comparar la fecha
             one_year_ago = one_year_ago.replace(hour=0, minute=0, second=0, microsecond=0)
             # Convertir la fecha a formato string en el mismo formato que la base de datos
-            date_filter = {"$gte": one_year_ago.strftime('%Y-%m-%d %H:%M:%S')}
+            date_filter = {"$gte": one_year_ago}
 
     elif timePeriod == "ultimoMes":
             # Obtener la fecha de hace un mes
@@ -273,7 +273,7 @@ def get_chart_data(
             # Truncar la hora a las 00:00:00
             one_month_ago = one_month_ago.replace(hour=0, minute=0, second=0, microsecond=0)
             # Convertir la fecha a formato string
-            date_filter = {"$gte": one_month_ago.strftime('%Y-%m-%d %H:%M:%S')}
+            date_filter = {"$gte": one_month_ago}
 
     else:
         # Si no es "ultimoAno" ni "ultimoMes", no filtramos por fecha
@@ -282,7 +282,7 @@ def get_chart_data(
         data = generar_datos_chart("Creación de una nueva empresa", companyType, date_filter)
 
     elif  dataType == "cambioSede":
-        data = generar_datos_chart("Cambio de sede de una nueva empresa", companyType, date_filter)
+        data = generar_datos_chart("Cambio de sede de una empresa", companyType, date_filter)
 
     elif dataType == "crecimientoEmpleados":
         data = generar_datos_chart("Contratación abundante de empleados por parte de una empresa", companyType, date_filter)
