@@ -8,12 +8,12 @@ class User(BaseModel):
     surname: str
     email: str
     subscriptions: List[str] = Field(default_factory=list)  # Valor por defecto: lista vacía
-    sources: List[str] = Field(default_factory=list)
+    filters: List[str] = Field(default_factory=list)
     password: str
 
 class SubscriptionRequest(BaseModel):
     subscription: str
     action: str
 
-class SourcesRequest(BaseModel):
-    sources: List[str]
+class FiltersRequest(BaseModel):
+    filters: List[str]

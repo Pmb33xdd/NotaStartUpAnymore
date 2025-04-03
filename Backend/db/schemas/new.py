@@ -3,6 +3,9 @@ def new_schema(new) -> dict:
             "company": new["company"],
             "title": new["title"],
             "topic": new["topic"],
+            "date": new["date"],
+            "location": new["location"],
+            "region": new["region"],
             "details": new["details"],}
 
 

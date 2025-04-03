@@ -5,15 +5,15 @@ import ChartEvaluation from './Chart_Evaluation';
 
 type NewsItem = {id: string; company: string; title: string; topic: string; details: string}
 type CompaniesItem = {id: string; name: string; type: string; details: string}
-type UserItem = {username: string; name: string; surname: string; email: string; subscriptions: string[]; sources: string[];}
+type UserItem = {username: string; name: string; surname: string; email: string; subscriptions: string[]; filters: string[];}
 type DataChart ={label: string; value: number}
 
 const Profile: React.FC = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [userData, setUserData] = useState<UserItem | null>(null);
     const [showSubscriptionOptions, setShowSubscriptionOptions] = useState(false);
-    const [showSourcesOptions, setShowSourcesOptions] = useState(false);
-    const [selectedSources, setSelectedSources] = useState<string[]>([]);
+    const [showFiltersOptions, setShowFiltersOptions] = useState(false);
+    const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
     const [news, setNews] = useState<NewsItem[]>([]);
     const [companies, setCompanies] = useState<CompaniesItem[]>([]);
     const [companyTypes, setCompanyTypes] = useState<string[]>([]);
@@ -21,7 +21,7 @@ const Profile: React.FC = () => {
     const [chartData, setChartData] = useState<any>(null);
 
 
-    const sourcesOptions = [
+    const FiltersOptions = [
         "El Economista",
         "Expansión",
         "Cinco Días",
@@ -113,42 +113,41 @@ const Profile: React.FC = () => {
         }
     };
 
-    const handleSourceChange = async (source: string) => {
-        setSelectedSources(prev => {
-            const updatedSources = prev.includes(source) ? prev.filter(s => s !== source) : [...prev, source];
-            updateUserSources(updatedSources); // Llamar a la función para actualizar en el backend
-            return updatedSources;
+    const handleFilterChange = async (filter: string) => {
+        setSelectedFilters(prev => {
+            const updatedFilters = prev.includes(filter) ? prev.filter(s => s !== filter) : [...prev, filter];
+            updateUserFilters(updatedFilters); // Llamar a la función para actualizar en el backend
+            return updatedFilters;
         });
     };
 
-    const updateUserSources = async (sources: string[]) => {
+    const updateUserFilters = async (filters: string[]) => {
         try {
             const token = localStorage.getItem('token');
             if (!token) {
                 navigate('/login');
                 return;
             }
-
-            const response = await fetch('https://notastartupanymore.onrender.com/users/me/sources', { // Nueva ruta en el backend
+            const response = await fetch('https://notastartupanymore.onrender.com/users/me/filters', { // Nueva ruta en el backend
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({ sources }),
+                body: JSON.stringify({ filters }),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.detail || 'Error al actualizar las fuentes');
+                throw new Error(errorData.detail || 'Error al actualizar los filtros');
             }
 
             setUserData(prevUserData => ({
                 ...(prevUserData as UserItem),
-                sources: sources, // Actualizar el estado local con las fuentes actualizadas
+                filters: filters, // Actualizar el estado local con los filtros actualizadas
             }));
         } catch (error) {
-            console.error('Error al actualizar las fuentes:', error);
+            console.error('Error al actualizar los filtros:', error);
         }
     };
 
@@ -206,8 +205,8 @@ const Profile: React.FC = () => {
 
                 const userData: UserItem = await response.json();
                 setUserData(userData);
-                if(userData && userData.sources){
-                    setSelectedSources(userData.sources);
+                if(userData && userData.filters){
+                    setSelectedFilters(userData.filters);
                 }
 
             } catch (error) {
@@ -263,8 +262,8 @@ const Profile: React.FC = () => {
         setShowSubscriptionOptions(!showSubscriptionOptions);
     };
 
-    const toggleSourcesOptions = () => {
-        setShowSourcesOptions(!showSourcesOptions);
+    const toggleFiltersOptions = () => {
+        setShowFiltersOptions(!showFiltersOptions);
     };
 
     if (!userData) {
@@ -333,11 +332,15 @@ const Profile: React.FC = () => {
                                     ))}
 
                                 </select>
-
-                                <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick('Creación de una nueva empresa')}>Creación de una nueva empresa</a>
-                                <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick('Contratación abundante de empleados por parte de una empresa')}>Contratación abundante de empleados por parte de una empresa</a>
-                                <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick('Cambio de sede de una empresa')}>Cambio de sede de una empresa</a>
-
+                                
+                                {!selectedCompanyType && (
+                                    <>
+                                        <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick('Creación de una nueva empresa')}>Creación de una nueva empresa</a>
+                                        <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick('Contratación abundante de empleados por parte de una empresa')}>Contratación abundante de empleados por parte de una empresa</a>
+                                        <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick('Cambio de sede de una empresa')}>Cambio de sede de una empresa</a>
+                                    </>
+                                )}
+                                
                                 {filteredCompanies.map((company) => (
                                     <a key={company.id} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick(company.name)}>
                                         {company.name}
@@ -376,34 +379,34 @@ const Profile: React.FC = () => {
 
                     
                 <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
-                    <h3 className="font-bold mb-4 text-lg text-gray-700">Fuentes de Información</h3>
-                    <button onClick={toggleSourcesOptions} className="bg-blue-400 hover:bg-blue-500 text-white rounded-md px-4 py-2 w-full text-left transition-all cursor-pointer">
+                    <h3 className="font-bold mb-4 text-lg text-gray-700">Filtros para mis noticias</h3>
+                    <button onClick={toggleFiltersOptions} className="bg-blue-400 hover:bg-blue-500 text-white rounded-md px-4 py-2 w-full text-left transition-all cursor-pointer">
 
-                        {showSourcesOptions ? "Cerrar Fuentes" : "Seleccionar Fuentes"}
+                        {showFiltersOptions ? "Cerrar Filtros" : "Seleccionar Filtros"}
                     </button>
 
                     <div className="bg-white p-4 rounded-md shadow-md max-h-64 h-64 overflow-y-auto relative">
-                        {showSourcesOptions && (
+                        {showFiltersOptions && (
                             <div className="absolute top-12 left-0 bg-white border rounded-md shadow-lg w-64 p-2 max-h-48 overflow-y-auto z-10">
-                                {sourcesOptions.map((source, index) => (
+                                {FiltersOptions.map((filter, index) => (
                                     <label key={index} className="flex items-center px-2 py-1 cursor-pointer hover:bg-gray-100">
                                         <input type ="checkbox" 
-                                               checked={selectedSources.includes(source)} 
-                                               onChange={() => handleSourceChange(source)}
+                                               checked={selectedFilters.includes(filter)} 
+                                               onChange={() => handleFilterChange(filter)}
                                                className="mr-2"
                                         />
-                                        {source}
+                                        {filter}
                                     </label>
                                 ))}
                             </div>
                         )}
 
-                        {selectedSources.length > 0 && (
+                        {selectedFilters.length > 0 && (
                             <div className="mt-4">
-                                <p className="font-semibold">Fuentes seleccionadas:</p>
+                                <p className="font-semibold">Filtros seleccionadas:</p>
                                 <ul className="list-disc pl-5">
-                                    {selectedSources.map((source, index) => (
-                                        <li key={index} className="test-sm">{source}</li>
+                                    {selectedFilters.map((filter, index) => (
+                                        <li key={index} className="test-sm">{filter}</li>
                                     ))}
                                 </ul>
                             </div>

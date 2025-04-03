@@ -7,4 +7,7 @@ class News(BaseModel):
     company: str
     title: str
     topic: str
+    date: str
+    location: str
+    region: str
     details: str

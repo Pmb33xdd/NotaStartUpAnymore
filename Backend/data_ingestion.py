@@ -3,6 +3,7 @@ import requests
 import os
 import json
 from ollama import chat
+from datetime import datetime
 from ollama import ChatResponse
 from bs4 import BeautifulSoup
 from db.models.news import News
@@ -78,12 +79,14 @@ class Ingestion():
         return None
     
     def data_ingestion_rss(self):
-        for entry in self.feed.entries[:1]:
+        for entry in self.feed.entries[:10]:
             print(f"Noticia {self.contador}")
             titulo = entry.title
             print(titulo)
             print("\n")
             descripcion = entry.description
+            fecha = entry.get("published", "Fecha no disponible")
+            fecha = datetime.strptime(fecha, "%a, %d %b %Y %H:%M:%S %z").strftime("%Y-%m-%d %H:%M:%S")
             print(descripcion)
             print("\n")
             response: ChatResponse = chat(model='deepseek-coder-v2:16b', messages=[
@@ -99,8 +102,10 @@ class Ingestion():
                         "sin ningún texto adicional ni comillas triples:\n\n"
                         "Ejemplo:\n"
                         '{ "noticia": "Vega Chargers cierra una ronda de cinco millones con sus socios", '
-                        '"tema":"ninguno", "empresa": "Vega Chargers", "tipo_empresa": "Desconocido", "detalles": "ninguno", "razones":"No está relacionada con ninguno de los temas que buscamos"}\n\n'
+                        '"tema":"ninguno", "empresa": "Vega Chargers", "tipo_empresa": "Desconocido", "detalles": "ninguno", "ambito": "desconocido", "region": "desconocido", "razones":"No está relacionada con ninguno de los temas que buscamos"}\n\n'
                         "Los detalles serán una breve cadena de texto. "
+                        'El campo ambito lo rellenaremos con "Nacional" si se trata de una empresa española o "Internacional" en caso contrario, en caso de no tener informacion al respecto este campo sera "desconocido"'
+                        'El campo region lo rellenaremos con "Nacion una localizacion mas concreta de la empresa en cuestion, Ejemplos: "Valencia", "Bilbao", "Paris". En caso de no tener informacion al respecto este campo sera "desconocido". En caso de que el campo ambito sea "desconocido" este campo region siempre sera "desconocido" tambien' 
                         '"En el campo empresa si se trata de varias las añadiremos seguidas de esta con , de la forma: "Empresa1, Empresa2, Empresa3, etc")"'
                         "En el campo \"tipo_empresa\" incluiremos el sector al que se dedica, Ejemplos:\"Hardware\", \"Agricola\", \"Ganaderia\", \"Textil\", \"Alimentacion\", \"Software\", \"Entretenimiento\", etc. En caso de que no haya una evidencia y no podamos saber esto con exactitud este campo será \"Desconocido\" "
                         "El cerrar una ronda de cierta cantidad de millones, invertir millones, ganar o recaudar cierta cantidad de beneficios, etc, no se considerará como ninguno de los tres temas que estamos buscando y el tema seleccionado será \"ninguno\""
@@ -122,6 +127,8 @@ class Ingestion():
                     tema = json_response.get("tema", "ninguno")
                     company_name = json_response.get("empresa", "Desconocida")
                     company_type = json_response.get("tipo_empresa", "Desconocido")
+                    loc = json_response.get("ambito", "Desconocido")
+                    reg = json_response.get("region", "Desconocido")
 
                     if tema != "ninguno":
                         existing_company = self.search_company(company_name)
@@ -134,6 +141,9 @@ class Ingestion():
                             company=company_name,
                             title=titulo,
                             topic=tema,
+                            date = fecha,
+                            location = loc,
+                            region= reg,
                             details=json_response.get("detalles", "Ninguno")
                         )
                         self.insert_db_news(noticia)
@@ -199,6 +209,8 @@ class Ingestion():
             titulo = article["title"]
             descripcion = article.get("description", "")
             noticia_url = article["url"]
+            fecha = article["publishedAt"]
+            fecha = datetime.strptime(fecha, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H:%M:%S")
 
             print(f"Procesando noticia: {titulo} \n")
 
@@ -206,20 +218,23 @@ class Ingestion():
                 {
                     'role': 'system',
                     'content': (
-                    "Eres un especialista en noticias sobre empresas. "
-                    "Tu trabajo consiste en determinar si ciertas noticias están relacionadas con empresas o no, "
-                    "y si lo están, debes decidir si encajan en alguno de estos tres temas: "
-                    "\"Creación de una nueva empresa\", \"Contratación abundante de empleados por parte de una empresa\" o "
-                    "\"Cambio de sede de una empresa\". En caso de que no esté relacionada con ninguno de estos tres temas, "
-                    "el tema será \"ninguno\". Responde únicamente en formato JSON como se muestra en el siguiente ejemplo, "
-                    "sin ningún texto adicional ni comillas triples:\n\n"
-                    "Ejemplo:\n"
-                    '{ "noticia": "Vega Chargers cierra una ronda de cinco millones con sus socios", '
-                    '"tema":"ninguno", "empresa": "Vega Chargers", "tipo_empresa": "Desconocido", "detalles": "ninguno", "razones":"No está relacionada con ninguno de los temas que buscamos"}\n\n'
-                    "Los detalles serán una breve cadena de texto. "
-                    "En el campo \"tipo_empresa\" incluiremos el sector al que se dedica, Ejemplos:\"Hardware\", \"Agricola\", \"Ganaderia\", \"Textil\", \"Alimentacion\", \"Software\", \"Entretenimiento\", etc. En caso de que no haya una evidencia y no podamos saber esto con exactitud este campo será \"Desconocido\" "
-                    "El cerrar una ronda de cierta cantidad de millones, invertir millones, ganar o recaudar cierta cantidad de beneficios, etc, no se considerará como ninguno de los tres temas que estamos buscando y el tema seleccionado será \"ninguno\""
-                    "En caso de que no haya ninguna empresa relacionada, el campo empresa será \"ninguna\". Responde únicamente con el JSON válido."
+                        "Eres un especialista en noticias sobre empresas. "
+                        "Tu trabajo consiste en determinar si ciertas noticias están relacionadas con empresas o no, "
+                        "y si lo están, debes decidir si encajan en alguno de estos tres temas: "
+                        "\"Creación de una nueva empresa\", \"Contratación abundante de empleados por parte de una empresa\" o "
+                        "\"Cambio de sede de una empresa\". En caso de que no esté relacionada con ninguno de estos tres temas, "
+                        "el tema será \"ninguno\". Responde únicamente en formato JSON como se muestra en el siguiente ejemplo, "
+                        "sin ningún texto adicional ni comillas triples:\n\n"
+                        "Ejemplo:\n"
+                        '{ "noticia": "Vega Chargers cierra una ronda de cinco millones con sus socios", '
+                        '"tema":"ninguno", "empresa": "Vega Chargers", "tipo_empresa": "Desconocido", "detalles": "ninguno", "ambito": "desconocido", "region": "desconocido", "razones":"No está relacionada con ninguno de los temas que buscamos"}\n\n'
+                        "Los detalles serán una breve cadena de texto. "
+                        'El campo ambito lo rellenaremos con "Nacional" si se trata de una empresa española o "Internacional" en caso contrario, en caso de no tener informacion al respecto este campo sera "desconocido"'
+                        'El campo region lo rellenaremos con "Nacion una localizacion mas concreta de la empresa en cuestion, Ejemplos: "Valencia", "Bilbao", "Paris". En caso de no tener informacion al respecto este campo sera "desconocido". En caso de que el campo ambito sea "desconocido" este campo region siempre sera "desconocido" tambien' 
+                        '"En el campo empresa si se trata de varias las añadiremos seguidas de esta con , de la forma: "Empresa1, Empresa2, Empresa3, etc")"'
+                        "En el campo \"tipo_empresa\" incluiremos el sector al que se dedica, Ejemplos:\"Hardware\", \"Agricola\", \"Ganaderia\", \"Textil\", \"Alimentacion\", \"Software\", \"Entretenimiento\", etc. En caso de que no haya una evidencia y no podamos saber esto con exactitud este campo será \"Desconocido\" "
+                        "El cerrar una ronda de cierta cantidad de millones, invertir millones, ganar o recaudar cierta cantidad de beneficios, etc, no se considerará como ninguno de los tres temas que estamos buscando y el tema seleccionado será \"ninguno\""
+                        "En caso de que no haya ninguna empresa relacionada, el campo empresa será \"ninguna\". Responde únicamente con el JSON válido."
 
                 )
                 },
@@ -238,6 +253,8 @@ class Ingestion():
                     title = json_response.get("noticia","ninguno")
                     company_name = json_response.get("empresa", "Desconocida")
                     company_type = json_response.get("tipo_empresa", "Desconocido")
+                    loc = json_response.get("ambito", "Desconocido")
+                    reg = json_response.get("region", "Desconocido")
                     existing_company = self.search_company(company_name)
 
                     if not existing_company and (company_name != "Desconocida" and company_name != "ninguna" and tema !="ninguno"):
@@ -251,6 +268,9 @@ class Ingestion():
                             company=company_name,
                             title=titulo,
                             topic=tema,
+                            date=fecha,
+                            location= loc,
+                            region=reg,
                             details=noticia_contenido or json_response.get("detalles", "Ninguno")
                         )
                         self.insert_db_news(noticia)

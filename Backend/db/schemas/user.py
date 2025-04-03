@@ -5,7 +5,7 @@ def user_schema(user) -> dict:
             "surname": user["surname"],
             "email": user["email"],
             "subscriptions": user["subscriptions"],
-            "sources": user["sources"],
+            "filters": user["filters"],
             "password": user["password"]}
 
 

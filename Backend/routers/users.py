@@ -3,7 +3,7 @@ from typing import Dict, List
 from db.schemas.user import user_schema, users_schema
 from db.schemas.new import new_schema, news_schema
 from db.schemas.company import company_schema, companies_schema
-from db.models.user import User, SubscriptionRequest, SourcesRequest
+from db.models.user import User, SubscriptionRequest, FiltersRequest
 from db.models.news import News
 from send_email import MailSender
 from db.models.contact_mail import ContactMail
@@ -18,6 +18,7 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
+from collections import Counter
 
 load_dotenv()
 
@@ -196,18 +197,18 @@ async def update_user_me(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error en el servidor: {str(e)}")
     
-@router.put("/me/sources", response_model=User)
-async def update_user_sources(
-    sources_request: SourcesRequest, current_user: User = Depends(get_current_user)
+@router.put("/me/filters", response_model=User)
+async def update_user_filters(
+    filters_request: FiltersRequest, current_user: User = Depends(get_current_user)
 ):
     try:
-        sources = sources_request.sources
-        print(f"Las fuentes antiguas de este usuario son {current_user.sources}")
-        print(f"Las fuentes nuevas de este usuario son {sources_request.sources}")
+        filters = filters_request.filters
+        print(f"Las fuentes antiguas de este usuario son {current_user.filters}")
+        print(f"Las fuentes nuevas de este usuario son {filters_request.filters}")
 
         result = db_client.users.update_one(
             {"_id": ObjectId(current_user.id)},
-            {"$set": {"sources": sources}}
+            {"$set": {"filters": filters}}
         )
 
         print(f"Resultado de la actualización en MongoDB: {result.raw_result}")
@@ -230,27 +231,44 @@ async def send_contact_email(contact: ContactMail):
     cartero.contact_email("pablomoreno37185@gmail.com", contact.name, contact.mail, contact.message )
 
 @router.get("/charts")
-async def get_chart_data(
+def get_chart_data(
     dataType: str = Query(...),
     companyType: str = Query(...),
-    timePeriod: str = Query(...)
+    timePeriod: str = Query(...),
 ) -> List[Chart]:
     """
     Obtiene los datos para el gráfico según los parámetros de selección.
     """
     print(f"Parámetros recibidos: data_type={dataType}, company_type={companyType}, time_period={timePeriod}")
     data = []
+
     if dataType == "empresasCreadas":
-        if companyType == "todos":
-            data = [{"label": "Tecnología", "value": 10}, {"label": "Finanzas", "value": 5}]
-        elif companyType == "tecnologia":
-            data = [{"label": "Tecnología", "value": 8}]
-        else:
-            raise HTTPException(status_code=400, detail="Tipo de empresa no válido")
+        # Buscar noticias de creación de empresas
+        news_list = list(db_client.news.find({"topic": "Creación de una nueva empresa"}))
+
+        # Extraer las empresas de las noticias
+        companies = {news["company"] for news in news_list}
+        print(f"{companies}")
+
+        # Buscar las empresas en la base de datos
+        companies_list = list(db_client.companies.find({"name": {"$in": list(companies)}}))
+        print(f"{companies_list}")
+
+        # Contar la cantidad de empresas por tipo
+        type_counts = Counter(company["type"] for company in companies_list)
+
+        # Filtrar por tipo de empresa si es necesario
+        if companyType != "todos":
+            type_counts = {k: v for k, v in type_counts.items() if k == companyType}
+     
+        # Crear la respuesta
+        data = [{"label": tipo, "value": cantidad} for tipo, cantidad in type_counts.items()]
+
     elif dataType == "crecimientoEmpleados":
         data = [{"label": "2023", "value": 150}, {"label": "2024", "value": 200}]
     else:
         raise HTTPException(status_code=400, detail="Tipo de datos no válido")
+
     print(f"Datos devueltos: {data}")
     return data
 
