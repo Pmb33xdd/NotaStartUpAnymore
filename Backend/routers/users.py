@@ -259,9 +259,53 @@ def get_chart_data(
     print(f"Parámetros recibidos: data_type={dataType}, company_type={companyType}, time_period={timePeriod}")
     data = []
 
+    if timePeriod == "ultimoAno":
+            # Obtener la fecha de hace un año
+            one_year_ago = datetime.now() - timedelta(days=365)
+            # Truncar la hora a las 00:00:00 para solo comparar la fecha
+            one_year_ago = one_year_ago.replace(hour=0, minute=0, second=0, microsecond=0)
+            # Convertir la fecha a formato string en el mismo formato que la base de datos
+            date_filter = {"$gte": one_year_ago.strftime('%Y-%m-%d %H:%M:%S')}
+
+    elif timePeriod == "ultimoMes":
+            # Obtener la fecha de hace un mes
+            one_month_ago = datetime.now() - timedelta(days=30)
+            # Truncar la hora a las 00:00:00
+            one_month_ago = one_month_ago.replace(hour=0, minute=0, second=0, microsecond=0)
+            # Convertir la fecha a formato string
+            date_filter = {"$gte": one_month_ago.strftime('%Y-%m-%d %H:%M:%S')}
+
+    else:
+        # Si no es "ultimoAno" ni "ultimoMes", no filtramos por fecha
+        date_filter = {}
     if dataType == "empresasCreadas":
-        # Buscar noticias de creación de empresas
-        news_list = list(db_client.news.find({"topic": "Creación de una nueva empresa"}))
+        generar_datos_chart("Creación de una nueva empresa", companyType, date_filter)
+
+    elif  dataType == "cambioSede":
+        generar_datos_chart("Cambio de sede de una nueva empresa", companyType, date_filter)
+
+    elif dataType == "crecimientoEmpleados":
+        generar_datos_chart("Contratación abundante de empleados por parte de una empresa", companyType, date_filter)
+        
+    else:
+        raise HTTPException(status_code=400, detail="Tipo de datos no válido")
+
+    print(f"Datos devueltos: {data}")
+    return data
+
+def search_user(field: str, key):
+    try:
+        user_data = db_client.users.find_one({field: key})
+        if user_data:  # Verifica si se encontró un usuario
+            user = user_schema(user_data)
+            return User(**user)
+        return None  # Retorna None si no se encuentra el usuario
+    except Exception as e:
+        print(f"Error en search_user: {e}") # Imprime el error para debuggear
+        return None  # También retorna None en caso de error
+    
+def generar_datos_chart(type: str, companyType: str, date_filter):
+        news_list = list(db_client.news.find({"topic": type, "date": date_filter}))
 
         # Extraer las empresas de las noticias
         companies = {news["company"] for news in news_list}
@@ -280,22 +324,3 @@ def get_chart_data(
      
         # Crear la respuesta
         data = [{"label": tipo, "value": cantidad} for tipo, cantidad in type_counts.items()]
-
-    elif dataType == "crecimientoEmpleados":
-        data = [{"label": "2023", "value": 150}, {"label": "2024", "value": 200}]
-    else:
-        raise HTTPException(status_code=400, detail="Tipo de datos no válido")
-
-    print(f"Datos devueltos: {data}")
-    return data
-
-def search_user(field: str, key):
-    try:
-        user_data = db_client.users.find_one({field: key})
-        if user_data:  # Verifica si se encontró un usuario
-            user = user_schema(user_data)
-            return User(**user)
-        return None  # Retorna None si no se encuentra el usuario
-    except Exception as e:
-        print(f"Error en search_user: {e}") # Imprime el error para debuggear
-        return None  # También retorna None en caso de error
