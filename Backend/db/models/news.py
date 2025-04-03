@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import datetime
 from typing import Optional
 
 
@@ -7,7 +8,7 @@ class News(BaseModel):
     company: str
     title: str
     topic: str
-    date: str
+    date: datetime
     location: str
     region: str
     details: str
