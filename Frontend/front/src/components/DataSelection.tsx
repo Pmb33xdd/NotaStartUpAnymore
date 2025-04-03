@@ -19,6 +19,7 @@ const DataSelection: React.FC<DataSelectionProps> = ({ onGenerate }) => {
             <select value={dataType} onChange={(e) => setDataType(e.target.value)} className="w-full p-2 border rounded-md mb-2">
                 <option value="empresasCreadas">Cantidad de empresas creadas</option>
                 <option value="crecimientoEmpleados">Crecimiento de empleados</option>
+                <option value="cambioSede">Cambios de sede de empresas</option>
             </select>
             <select value={companyType} onChange={(e) => setCompanyType(e.target.value)} className="w-full p-2 border rounded-md mb-2">
                 <option value="todos">Todos los tipos</option>

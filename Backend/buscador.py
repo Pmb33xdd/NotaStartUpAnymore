@@ -4,7 +4,10 @@ from send_email import MailSender
 
 rss_Expansion_emprendedores = "https://e00-expansion.uecdn.es/rss/expansion-empleo/emprendedores.xml"
 lista_urls = []
-query = '"nueva sede" OR empleados OR "contratar" OR "nueva empresa" '
+query = ' "nueva sede" empleados'
+#query = '"nueva sede" empleados "contratar" "nueva empresa" '
+#query = '"nueva sede" OR empleados OR "contratar" OR "nueva empresa" '
+
 
 #feed = feedparser.parse(rss_Expansion_emprendedores)
 #for entry in feed.entries:

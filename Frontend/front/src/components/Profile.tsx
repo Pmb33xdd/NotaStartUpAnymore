@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataSelection from './DataSelection';
 import ChartEvaluation from './Chart_Evaluation';
+import { List } from 'postcss/lib/list';
 
 type NewsItem = {id: string; company: string; title: string; topic: string; details: string}
 type CompaniesItem = {id: string; name: string; type: string; details: string}
@@ -18,22 +19,8 @@ const Profile: React.FC = () => {
     const [companies, setCompanies] = useState<CompaniesItem[]>([]);
     const [companyTypes, setCompanyTypes] = useState<string[]>([]);
     const [selectedCompanyType, setSelectedCompanyType] = useState<string | null>(null);
-    const [chartData, setChartData] = useState<any>(null);
-
-
-    const FiltersOptions = [
-        "El Economista",
-        "Expansión",
-        "Cinco Días",
-        "Forbes",
-        "Bloomberg",
-        "Financial Times",
-        "The Wall Street Journal",
-        "Business Insider",
-        "TechCrunch",
-        "Reuters",
-        "CNN Business"
-    ];
+    const [chartData, setChartData] = useState<DataChart[]>([]);
+    const [FiltersOptions, setFiltersOptions] = useState<string[]>([]);
 
     const navigate = useNavigate();
 
@@ -249,9 +236,27 @@ const Profile: React.FC = () => {
             }
         }
 
+        
+        const fetchFilters = async () => {
+            try {
+                const response = await fetch("https://notastartupanymore.onrender.com/users/filters");
+        
+                if (!response.ok) {
+                    throw new Error("Error al obtener los filtros");
+                }
+        
+                const filtersData: string[] = await response.json(); // Corregido el tipo
+                setFiltersOptions(filtersData); // Corregido el seteo del estado
+        
+            } catch (error) {
+                console.error("Error al obtener los filtros:", error);
+            }
+        };
+
         fetchCompanies();
         fetchNews();
         fetchUserData();
+        fetchFilters();
     }, [navigate]);
 
     const toggleDropdown = () => {
@@ -387,7 +392,8 @@ const Profile: React.FC = () => {
 
                     <div className="bg-white p-4 rounded-md shadow-md max-h-64 h-64 overflow-y-auto relative">
                         {showFiltersOptions && (
-                            <div className="absolute top-12 left-0 bg-white border rounded-md shadow-lg w-64 p-2 max-h-48 overflow-y-auto z-10">
+                            <div className="relative mt-2 w-full">
+                            <div className="bg-white border rounded-md shadow-lg w-full max-h-48 overflow-y-auto z-10">
                                 {FiltersOptions.map((filter, index) => (
                                     <label key={index} className="flex items-center px-2 py-1 cursor-pointer hover:bg-gray-100">
                                         <input type ="checkbox" 
@@ -398,6 +404,7 @@ const Profile: React.FC = () => {
                                         {filter}
                                     </label>
                                 ))}
+                                </div>
                             </div>
                         )}
 

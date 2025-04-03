@@ -81,8 +81,25 @@ async def news():
     return news_schema(db_client.news.find())
 
 @router.get("/companies", response_model=list[Company])
-async def news():
+async def companies():
     return companies_schema(db_client.companies.find())
+
+@router.get("/filters", response_model=list[str])
+async def filters():
+
+    unique_filters = set()
+
+    news_items = db_client.news.find().to_list(None)
+
+    for news_item in news_items:
+        if "location" in news_item and news_item["location"]:
+            if(news_item["location"] != "desconocido"):
+                unique_filters.add(news_item["location"])
+        if "region" in news_item and news_item["region"]:
+            if(news_item["region"] != "desconocido"):
+                unique_filters.add(news_item["region"])
+
+    return list(unique_filters)
 
 """
 @router.get("/{id}")

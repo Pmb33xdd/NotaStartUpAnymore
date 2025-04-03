@@ -24,8 +24,15 @@ const Home: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
         setResponse("");
+
+         // Validación: Todos los campos deben estar llenos
+        if (!formData.name.trim() || !formData.mail.trim() || !formData.message.trim()) {
+            setResponse("Todos los campos son obligatorios.");
+            return;
+        }
+
+        setLoading(true);
 
         try {
             const res = await fetch("https://notastartupanymore.onrender.com/users/contactmail", {
