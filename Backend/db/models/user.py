@@ -10,6 +10,7 @@ class User(BaseModel):
     subscriptions: List[str] = Field(default_factory=list)  # Valor por defecto: lista vacía
     filters: List[str] = Field(default_factory=list)
     password: str
+    is_verified: bool = False
 
 class SubscriptionRequest(BaseModel):
     subscription: str

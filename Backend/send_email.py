@@ -69,6 +69,34 @@ class MailSender():
         except Exception as e:
             print(f"Error al enviar correo a {user_email}: {e}")
 
+    def send_verification_email(self, user_email: str, name: str, verification_url: str):
+        msg = MIMEMultipart()
+        msg["From"] = self.smtp_user
+        msg["To"] = user_email
+        msg["Subject"] = "📩 Verifica tu cuenta en NotaStartupAnymore"
+
+        html_content = f"""
+        <html>
+            <body>
+                <p>Hola <b>{name}</b>,</p>
+                <p>Gracias por registrarte. Para activar tu cuenta, haz clic en el siguiente enlace:</p>
+                <p><a href="{verification_url}">Verificar cuenta</a></p>
+                <p>Si no te registraste, puedes ignorar este correo.</p>
+            </body>
+        </html>
+        """
+        msg.attach(MIMEText(html_content, "html"))
+
+        try:
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.starttls()
+                server.login(self.smtp_user, self.smtp_password)
+                server.sendmail(self.smtp_user, user_email, msg.as_string())
+            print(f"Correo de verificación enviado a {user_email}")
+        except Exception as e:
+            print(f"Error al enviar correo de verificación a {user_email}: {e}")
+
+
 """
 if __name__ == "__main__":
     SMTP_SERVER = "smtp.gmail.com"

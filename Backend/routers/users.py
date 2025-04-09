@@ -108,7 +108,7 @@ async def user(id: str):
 """
 
 @router.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
-async def user(user: User):
+async def register(user: User):
     try:
         if type(search_user("email", user.email)) == User:
             raise HTTPException(
@@ -123,12 +123,42 @@ async def user(user: User):
 
         id = db_client.users.insert_one(user_dict).inserted_id
         new_user = user_schema(db_client.users.find_one({"_id": id}))
+
+        verification_token = create_access_token(
+            data={"sub": user.email, "type": "verify"},
+            expires_delta=timedelta(hours=24)  # Expira en 1 día
+        )
+
+        verification_link = f"http://localhost:8000/users/verify-email?token={verification_token}"
+        cartero.send_verification_email(user_dict["email"], user_dict["name"], verification_link)
         return User(**new_user)
+    
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Error al crear usuario: {str(e)}",
         )
+
+@router.get("/verify-email")
+async def verify_email(token: str):
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        token_type = payload.get("type")
+
+        if token_type != "verify" or not email:
+            raise HTTPException(status_code=400, detail="Token inválido")
+
+        user = search_user("email", email)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+        # Marcar como verificado
+        db_client.users.update_one({"email": email}, {"$set": {"is_verified": True}})
+        return {"message": "Correo verificado con éxito"}
+
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Token inválido o expirado")
 
 
 @router.post("/login", response_model=dict)
@@ -139,12 +169,20 @@ async def login(login_data: LoginData):  # Usa LoginData como tipo de parámetro
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas"
             )
+    
         if not bcrypt.checkpw(
             login_data.password.encode("utf-8"), db_user.password.encode("utf-8")
         ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas"
             )
+        
+        if not db_user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Debes verificar tu correo antes de iniciar sesión"
+            )
+        
         # Crea el token JWT
         access_token = create_access_token(data={"sub": db_user.email})
         return {"access_token": access_token, "token_type": "bearer"}
