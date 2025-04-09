@@ -10,7 +10,7 @@ const Register: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
-    const navigate = useNavigate(); // Crea una instancia de useNavigate
+//    const navigate = useNavigate(); // Crea una instancia de useNavigate
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
