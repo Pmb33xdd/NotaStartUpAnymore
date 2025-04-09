@@ -6,7 +6,8 @@ def user_schema(user) -> dict:
             "email": user["email"],
             "subscriptions": user["subscriptions"],
             "filters": user["filters"],
-            "password": user["password"]}
+            "password": user["password"],
+            "is_verified": user["is_verified"]}
 
 
 def users_schema(users) -> list:

@@ -51,7 +51,7 @@ const Register: React.FC = () => {
             setConfirmPassword('');
 
             // Redirige al inicio de sesión
-            navigate('/login');
+            //navigate('/login');
 
         } catch (error: any) {
             console.error('Error:', error);
@@ -154,7 +154,7 @@ const Register: React.FC = () => {
                         </div>
 
                         {error && <p className="text-red-500 mt-2 text-sm">{error}</p>}
-                        {success && <p className="text-green-500 mt-2 text-sm">Usuario registrado con éxito</p>}
+                        {success && <p className="text-green-500 mt-2 text-sm">Verifica tu correo para completar el registro</p>}
 
                         <button
                             type="submit"
