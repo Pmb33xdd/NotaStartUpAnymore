@@ -126,7 +126,6 @@ async def register(user: User):
 
         verification_token = create_access_token(
             data={"sub": user.email, "type": "verify"},
-            expires_delta=timedelta(hours=24)  # Expira en 1 día
         )
 
         verification_link = f"http://localhost:8000/users/verify-email?token={verification_token}"
