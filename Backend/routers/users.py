@@ -128,7 +128,7 @@ async def register(user: User):
             data={"sub": user.email, "type": "verify"},
         )
 
-        verification_link = f"http://localhost:8000/users/verify-email?token={verification_token}"
+        verification_link = f"https://notastartupanymore.onrender.com/users/verify-email?token={verification_token}"
         cartero.send_verification_email(user_dict["email"], user_dict["name"], verification_link)
         return User(**new_user)
     
