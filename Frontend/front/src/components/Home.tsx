@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { API_KEY, ENVIAR_CORREO_CONTACTANOS_URL } from "../urls";
 
 const Home: React.FC = () => {
     const queHacemosRef = useRef<HTMLDivElement>(null);
@@ -35,9 +36,11 @@ const Home: React.FC = () => {
         setLoading(true);
 
         try {
-            const res = await fetch("https://notastartupanymore.onrender.com/users/contactmail", {
+            const res = await fetch(ENVIAR_CORREO_CONTACTANOS_URL, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json",
+                           'access_token': API_KEY,
+                 },
                 body: JSON.stringify(formData),
             });
 

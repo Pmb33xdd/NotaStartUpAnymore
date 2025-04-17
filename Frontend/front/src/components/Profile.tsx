@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataSelection from './DataSelection';
 import ChartEvaluation from './Chart_Evaluation';
+import { API_KEY, COMPANIES_URL, DATOS_DE_USUARIO_URL, DATOS_GRAFICOS_URL, FILTROS_FETCH_URL, FILTROS_URL, NEWS_URL } from '../urls';
 
 
 type NewsItem = {id: string; company: string; title: string; topic: string; details: string}
@@ -34,11 +35,12 @@ const Profile: React.FC = () => {
                 return;
             }
 
-            const response = await fetch('https://notastartupanymore.onrender.com/users/me', { 
+            const response = await fetch(DATOS_DE_USUARIO_URL, { 
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
+                    'access_token': API_KEY,
                 },
                 body: JSON.stringify({ subscription, action: "add" }), 
             });
@@ -76,11 +78,12 @@ const Profile: React.FC = () => {
                 return;
             }
 
-            const response = await fetch('https://notastartupanymore.onrender.com/users/me', {
+            const response = await fetch(DATOS_DE_USUARIO_URL, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
+                    'access_token': API_KEY,
                 },
                 body: JSON.stringify({ subscription, action: "remove" }),  
             });
@@ -115,11 +118,12 @@ const Profile: React.FC = () => {
                 navigate('/login');
                 return;
             }
-            const response = await fetch('https://notastartupanymore.onrender.com/users/me/filters', { // Nueva ruta en el backend
+            const response = await fetch(FILTROS_URL, { // Nueva ruta en el backend
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
+                    'access_token': API_KEY,
                 },
                 body: JSON.stringify({ filters }),
             });
@@ -138,19 +142,19 @@ const Profile: React.FC = () => {
         }
     };
 
-    const handleGenerateChart = async (params: any) => {
+    const handleGenerateChart = async (params: Record<string, string>) => {
         console.log('handleGenerateChart ejecutándose con parámetros:', params);
     
         try {
             // Construye la URL con parámetros de consulta
-            const urlParams = new URLSearchParams(params);
-            const url = `https://notastartupanymore.onrender.com/users/charts?${urlParams.toString()}`;
+            const url = DATOS_GRAFICOS_URL(params)
     
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'access_token': API_KEY,
                 },
             });
     
@@ -176,11 +180,12 @@ const Profile: React.FC = () => {
                     return;
                 }
 
-                const response = await fetch('https://notastartupanymore.onrender.com/users/me', {
+                const response = await fetch(DATOS_DE_USUARIO_URL, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`,
+                        'access_token': API_KEY,
                     },
                 });
 
@@ -205,7 +210,13 @@ const Profile: React.FC = () => {
 
         const fetchNews = async () => {
             try{
-                const response = await fetch ('https://notastartupanymore.onrender.com/users/news');
+                const response = await fetch (NEWS_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'access_token': API_KEY,
+                    },
+                });
                 if(!response.ok){
                     throw new Error('Error al obtener las noticias')
                 }
@@ -220,7 +231,14 @@ const Profile: React.FC = () => {
 
         const fetchCompanies = async () =>{
             try{
-                const response = await fetch('https://notastartupanymore.onrender.com/users/companies');
+                const response = await fetch(COMPANIES_URL,{
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'access_token': API_KEY,
+                    },
+                });
+
                 if(!response.ok){
                     throw new Error('Error al obtener las empresas')
                 }
@@ -239,7 +257,13 @@ const Profile: React.FC = () => {
         
         const fetchFilters = async () => {
             try {
-                const response = await fetch("https://notastartupanymore.onrender.com/users/filters");
+                const response = await fetch(FILTROS_FETCH_URL,{
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'access_token': API_KEY,
+                    },
+                });
         
                 if (!response.ok) {
                     throw new Error("Error al obtener los filtros");
@@ -303,8 +327,8 @@ const Profile: React.FC = () => {
                     <div className="bg-white p-4 rounded-md shadow-md max-h-64 h-64 overflow-y-auto relative">                       
                         {userData && userData.subscriptions && userData.subscriptions.length > 0 ? (
                             <ul className="list-disc pl-5">
-                                {userData.subscriptions.map((subscription, index) => (
-                                    <li key={index} className="flex justify-between items-center py-1">
+                                {userData.subscriptions.map((subscription) => (
+                                    <li key={subscription} className="flex justify-between items-center py-1">
                                         <span className="text-gray-800">{subscription}</span>
                                         <button onClick={() => handleSubscriptionRemove(subscription)} className="ml-2 text-red-500 hover:text-red-700 transition-all cursor-pointer">
                                             x
@@ -331,9 +355,9 @@ const Profile: React.FC = () => {
                                 >
                                     <option value=""> Todos los tipos </option>
 
-                                    {companyTypes.map((type, index) =>(
+                                    {companyTypes.map((type) =>(
 
-                                    <option key={index} value={type}>{type}</option>
+                                    <option key={type} value={type}>{type}</option>
                                     ))}
 
                                 </select>
@@ -394,8 +418,8 @@ const Profile: React.FC = () => {
                         {showFiltersOptions && (
                             <div className="relative mt-2 w-full">
                             <div className="bg-white border rounded-md shadow-lg w-full max-h-48 overflow-y-auto z-10">
-                                {FiltersOptions.map((filter, index) => (
-                                    <label key={index} className="flex items-center px-2 py-1 cursor-pointer hover:bg-gray-100">
+                                {FiltersOptions.map((filter) => (
+                                    <label key={filter} className="flex items-center px-2 py-1 cursor-pointer hover:bg-gray-100">
                                         <input type ="checkbox" 
                                                checked={selectedFilters.includes(filter)} 
                                                onChange={() => handleFilterChange(filter)}
@@ -410,10 +434,10 @@ const Profile: React.FC = () => {
 
                         {selectedFilters.length > 0 && (
                             <div className="mt-4">
-                                <p className="font-semibold">Filtros seleccionadas:</p>
+                                <p className="font-semibold">Filtros seleccionados:</p>
                                 <ul className="list-disc pl-5">
-                                    {selectedFilters.map((filter, index) => (
-                                        <li key={index} className="test-sm">{filter}</li>
+                                    {selectedFilters.map((filter) => (
+                                        <li key={filter} className="test-sm">{filter}</li>
                                     ))}
                                 </ul>
                             </div>

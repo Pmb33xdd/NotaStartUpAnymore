@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_KEY, DATOS_DE_USUARIO_URL } from '../urls';
 
 interface AuthContextType {
     isLoggedIn: boolean;
@@ -25,9 +26,10 @@ export const AuthProvider: React.FC<{ children?: React.ReactNode }> = ({ childre
             const token = localStorage.getItem('token');
             if (token) {
                 try {
-                    const response = await fetch('https://notastartupanymore.onrender.com/users/me', {
+                    const response = await fetch(DATOS_DE_USUARIO_URL, {
                         headers: {
-                            'Authorization': `Bearer ${token}`
+                            'Authorization': `Bearer ${token}`,
+                            'access_token': API_KEY,
                         }
                     });
 

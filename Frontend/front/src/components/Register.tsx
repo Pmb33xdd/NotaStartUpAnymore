@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_KEY, REGISTER_URL } from '../urls';
 // import { useNavigate } from 'react-router-dom';
 
 const Register: React.FC = () => {
@@ -23,10 +24,11 @@ const Register: React.FC = () => {
         }
 
         try {
-            const response = await fetch('https://notastartupanymore.onrender.com/users/', {
+            const response = await fetch(REGISTER_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'access_token': API_KEY,
                 },
                 body: JSON.stringify({
                     username,
