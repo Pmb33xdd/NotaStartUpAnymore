@@ -6,7 +6,7 @@ export const FILTROS_URL = `${BASE_URL}/me/filters`;
 export const NEWS_URL = `${BASE_URL}/news`;
 export const COMPANIES_URL = `${BASE_URL}/companies`;
 export const REGISTER_URL = `${BASE_URL}/`;
-export const FILTROS_FETCH_URL = `${BASE_URL}/users/filters`;
+export const FILTROS_FETCH_URL = `${BASE_URL}/filters`;
 export const DATOS_GRAFICOS_URL = (params: Record<string, string>) => {
     const urlParams = new URLSearchParams(params).toString();
     return `${BASE_URL}/charts?${urlParams}`;
