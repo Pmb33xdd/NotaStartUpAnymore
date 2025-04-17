@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 
 #URLS DE API
-src/urls.ts
+.env

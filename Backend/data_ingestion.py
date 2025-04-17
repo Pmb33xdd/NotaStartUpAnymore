@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API_KEY = os.getenv("API_KEY")
+API_KEY = os.getenv("API_KEY_GOOGLE_NEWS")
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = os.getenv("SMTP_PORT") 
 SMTP_USER = os.getenv("SMTP_USER")

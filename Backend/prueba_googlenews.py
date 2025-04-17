@@ -1,6 +1,8 @@
-import requests
+import requests, os
+from dotenv import load_dotenv
+load_dotenv()
 
-API_KEY = "be78738e07ee44e5867b39ca8a416f81"
+API_KEY = os.getenv("API_KEY_GOOGLE_NEWS")
 query = '"nueva sede" empleados '
 url = f"https://newsapi.org/v2/everything?q={query}&apiKey={API_KEY}"
 
