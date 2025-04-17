@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query, status, Depends
+from fastapi import APIRouter, HTTPException, Query, status, Depends, Security
 from typing import Dict, List
 from db.schemas.user import user_schema, users_schema
 from db.schemas.new import new_schema, news_schema
@@ -16,14 +16,16 @@ from bson import ObjectId
 import bcrypt
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
 from dotenv import load_dotenv
 from collections import Counter
 
 load_dotenv()
 
+API_KEY = os.getenv("SECRET_MI_API")
+API_KEY_NAME = "access_token"
+api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
-API_KEY = os.getenv("API_KEY")
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = os.getenv("SMTP_PORT") 
 SMTP_USER = os.getenv("SMTP_USER")
@@ -72,20 +74,30 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
     return user
 
+async def get_api_key(api_key_header: str = Security(api_key_header)):
+    if api_key_header == API_KEY:
+        return api_key_header
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Could not validate API key",
+        )
+
+
 @router.get("/", response_model=list[User])
-async def users():
+async def users(api_key: str = Depends(get_api_key)):
     return users_schema(db_client.users.find())
 
 @router.get("/news", response_model=list[News])
-async def news():
+async def news(api_key: str = Depends(get_api_key)):
     return news_schema(db_client.news.find())
 
 @router.get("/companies", response_model=list[Company])
-async def companies():
+async def companies(api_key: str = Depends(get_api_key)):
     return companies_schema(db_client.companies.find())
 
 @router.get("/filters", response_model=list[str])
-async def filters():
+async def filters(api_key: str = Depends(get_api_key)):
 
     unique_filters = set()
 
@@ -108,7 +120,7 @@ async def user(id: str):
 """
 
 @router.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
-async def register(user: User):
+async def register(user: User, api_key: str = Depends(get_api_key)):
     try:
         if type(search_user("email", user.email)) == User:
             raise HTTPException(
@@ -139,7 +151,7 @@ async def register(user: User):
         )
 
 @router.get("/verify-email")
-async def verify_email(token: str):
+async def verify_email(token: str, api_key: str = Depends(get_api_key)):
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
         email = payload.get("sub")
@@ -161,7 +173,7 @@ async def verify_email(token: str):
 
 
 @router.post("/login", response_model=dict)
-async def login(login_data: LoginData):  # Usa LoginData como tipo de parámetro
+async def login(login_data: LoginData, api_key: str = Depends(get_api_key)):  # Usa LoginData como tipo de parámetro
     try:
         db_user = search_user("email", login_data.email)  # Accede al email desde login_data
         if not db_user:
@@ -195,11 +207,11 @@ async def login(login_data: LoginData):  # Usa LoginData como tipo de parámetro
 
 # Endpoint para obtener los datos del usuario actual (protegido)
 @router.get("/me", response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_user)):
+async def read_users_me(current_user: User = Depends(get_current_user), api_key: str = Depends(get_api_key)):
     return current_user
 
 @router.put("/")
-async def user(user: User):
+async def user(user: User, api_key: str = Depends(get_api_key)):
     user_dict = dict(user)
     del user_dict["id"]
     try:
@@ -218,7 +230,7 @@ async def user(id: str):
     
 @router.put("/me", response_model=User)
 async def update_user_me(
-    request: SubscriptionRequest, current_user: User = Depends(get_current_user)
+    request: SubscriptionRequest, current_user: User = Depends(get_current_user), api_key: str = Depends(get_api_key)
 ):
     try:
         subscription = request.subscription
@@ -253,7 +265,7 @@ async def update_user_me(
     
 @router.put("/me/filters", response_model=User)
 async def update_user_filters(
-    filters_request: FiltersRequest, current_user: User = Depends(get_current_user)
+    filters_request: FiltersRequest, current_user: User = Depends(get_current_user), api_key: str = Depends(get_api_key)
 ):
     try:
         filters = filters_request.filters
@@ -280,7 +292,7 @@ async def update_user_filters(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error en el servidor: {str(e)}")
 
 @router.post("/contactmail")
-async def send_contact_email(contact: ContactMail):
+async def send_contact_email(contact: ContactMail, api_key: str = Depends(get_api_key)):
 
     cartero.contact_email("pablomoreno37185@gmail.com", contact.name, contact.mail, contact.message )
 
@@ -289,6 +301,7 @@ def get_chart_data(
     dataType: str = Query(...),
     companyType: str = Query(...),
     timePeriod: str = Query(...),
+    api_key: str = Depends(get_api_key)
 ) -> List[Chart]:
     """
     Obtiene los datos para el gráfico según los parámetros de selección.
