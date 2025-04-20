@@ -151,7 +151,7 @@ async def register(user: User, api_key: str = Depends(get_api_key)):
         )
 
 @router.get("/verify-email")
-async def verify_email(token: str, api_key: str = Depends(get_api_key)):
+async def verify_email(token: str):
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
         email = payload.get("sub")
@@ -222,11 +222,17 @@ async def user(user: User, api_key: str = Depends(get_api_key)):
         return {"error": "No se ha actualizado el usuario"}
     return search_user("_id", ObjectId(user.id))
 
-@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-async def user(id: str):
-    found = db_client.users.find_one_and_delete({"_id": ObjectId(id)})
-    if not found:
-        return {"error": "No se ha eliminado el usuario"}
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(user_id: str, api_key: str = Depends(get_api_key)):
+    try:
+        found = db_client.users.find_one_and_delete({"_id": ObjectId(user_id)})
+        if not found:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        return  # 204 no content
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error en el servidor: {str(e)}")
+
     
 @router.put("/me", response_model=User)
 async def update_user_me(

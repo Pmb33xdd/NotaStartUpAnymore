@@ -161,7 +161,7 @@ class Ingestion():
             self.contador += 1
 
     
-    def scrape_article(self, url, title):
+    def scrape_article(self, url, title, tema):
         """Extrae información de la noticia desde la URL usando web scraping."""
         try:
             headers = {"User-Agent": "Mozilla/5.0"}
@@ -179,21 +179,37 @@ class Ingestion():
                 {
                     'role': 'system',
                     'content': (
-                        "Eres un especialista en noticias sobre empresas, vas a recibir un extensa noticia sobre una empresa"
-                        "La noticia tratara sobre alguno de estos tres temas: \"creacion de una nueva empresa\", \"contratacion abundante de empleados de una empresa\" o \"cambio de sede de una empresa\" "
+                        "Eres un especialista en noticias sobre empresas, vas a recibir una extensa noticia sobre una empresa"
+                        "La noticia tratara sobre alguno de estos tres temas: \"Creación de una nueva empresa\", \"Contratación abundante de empleados por parte de una empresa\" o \"Cambio de sede de una empresa\" "
                         "Debes resumir la noticia y extraer los detalles más relevantes, excluyendo texto sin relevancia"
+                        "Responde unicamente con un formato JSON que contenga los siguientes campos"
+                        '{ "tema": "Tema sobre el que trata la noticia de los tres planteados", "empresa": "Nombre de la empresa de la que trata la noticia", "tipo_empresa": "Sector en el que trabaja la empresa", "detalles": "Breve resumen que contenga la informacion relevante de la noticia excluyendo texto sin importanci" , }\n\n'
+                        "Deberas decidir si el tema proporcionado como tema provisional, realmente encaja con la noticia o no, en caso de que si que encaje en el campo tema del JSON dejaras el mismo tema que se proporciono como Tema provisional, si encaja mejor con alguno de los otros dos temas posibles pondrás el que mejor encaje y en caso de que finalmente no tenga que ver con nignuno de los tres pondrás \"ninguno\""
                     )
                 },
                 {
                     'role': 'user',
-                    'content': f"Titular: {title}    Descripción:{content}\n",
+                    'content': f"Titular: {title}    Descripción:{content} Tema provisional:{tema}\n",
                 },
             ])
                  
             else:
                 return None
+            
+            try:
+                json_content = self.extract_json(response['message']['content'])
+                if json_content:
+                    json_response = json.loads(json_content)
+                    print("Noticia reevaluada: \n")
+                    print(json_response)
+                    topic = json_response.get("tema","ninguno")
+                    tipo_empresa = json_response.get("tipo_empresa", "Desconocido")
+                    details = json_response.get("detalles", "Desconocidos")
+
+            except json.JSONDecodeError as e:
+                print(f"Error procesando noticia '{title}': {e}")
                 
-            return response['message']['content'] #if content else "No se pudo extraer más información."
+            return topic, details, tipo_empresa
         
         except Exception as e:
             print(f"Error extrayendo información de {url}: {e}")
@@ -250,32 +266,34 @@ class Ingestion():
                     json_response = json.loads(json_content)
                     print(json_response)
                     tema = json_response.get("tema", "ninguno")
-                    title = json_response.get("noticia","ninguno")
+                    titulo = json_response.get("noticia","ninguno")
                     company_name = json_response.get("empresa", "Desconocida")
                     company_type = json_response.get("tipo_empresa", "Desconocido")
                     loc = json_response.get("ambito", "Desconocido")
                     reg = json_response.get("region", "Desconocido")
+                    nuevo_tema = "ninguno"
                     existing_company = self.search_company(company_name)
 
-                    if not existing_company and (company_name != "Desconocida" and company_name != "ninguna" and tema !="ninguno"):
-                        new_company = Company(name=company_name, type=company_type, details="Desconocidos")
+                    if tema != "ninguno":
+                        nuevo_tema, resumen, nuevo_tipo_empresa = self.scrape_article(noticia_url, titulo, tema)  # 🔍 Scraping
+                        if (nuevo_tema != "ninguno"):
+                            noticia = News(
+                                company=company_name,
+                                title=titulo,
+                                topic=nuevo_tema,
+                                date=fecha,
+                                location= loc,
+                                region=reg,
+                                details=resumen or json_response.get("detalles", "Ninguno")
+                            )
+                            self.insert_db_news(noticia)
+                            print(f"Noticia '{titulo}' insertada en la base de datos. \n")
+                            self.lista_noticias.append(noticia)
+
+                    if not existing_company and (company_name != "Desconocida" and company_name != "ninguna" and nuevo_tema !="ninguno"):
+                        new_company = Company(name=company_name, type=nuevo_tipo_empresa, details="Desconocidos")
                         self.insert_db_company(new_company)
                         print(f"Compañía '{company_name}' insertada en la base de datos. \n")
-
-                    if tema != "ninguno":
-                        noticia_contenido = self.scrape_article(noticia_url, title)  # 🔍 Scraping
-                        noticia = News(
-                            company=company_name,
-                            title=titulo,
-                            topic=tema,
-                            date=fecha,
-                            location= loc,
-                            region=reg,
-                            details=noticia_contenido or json_response.get("detalles", "Ninguno")
-                        )
-                        self.insert_db_news(noticia)
-                        print(f"Noticia '{titulo}' insertada en la base de datos. \n")
-                        self.lista_noticias.append(noticia)
 
             except json.JSONDecodeError as e:
                 print(f"Error procesando noticia '{titulo}': {e}")

@@ -11,4 +11,8 @@ export const DATOS_GRAFICOS_URL = (params: Record<string, string>) => {
     const urlParams = new URLSearchParams(params).toString();
     return `${BASE_URL}/charts?${urlParams}`;
 };
+export const DELETE_URL = (id: string) => {
+    return `${BASE_URL}/${id}`;
+};
+
 export const API_KEY = import.meta.env.VITE_API_KEY || 'sfjicisjndjkanjdñflffkewjlkrkfmclksklnk';
