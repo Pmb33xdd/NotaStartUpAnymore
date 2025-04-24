@@ -3,12 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import DataSelection from './DataSelection';
 import ChartEvaluation from './Chart_Evaluation';
 import SettingsModal from './SettingsModal';
-import { API_KEY, COMPANIES_URL, DATOS_DE_USUARIO_URL, DATOS_GRAFICOS_URL, DELETE_URL, FILTROS_FETCH_URL, FILTROS_URL, NEWS_URL } from '../urls';
+import { API_KEY, COMPANIES_URL, DATOS_DE_USUARIO_URL, DATOS_GRAFICOS_URL, DELETE_URL, FILTROS_FETCH_URL, FILTROS_URL, NEWS_URL, REPORT_URL } from '../urls';
 
 type NewsItem = { id: string; company: string; title: string; topic: string; details: string }
 type CompaniesItem = { id: string; name: string; type: string; details: string }
 type UserItem = { id: string, username: string; name: string; surname: string; email: string; subscriptions: string[]; filters: string[] }
 type DataChart = { label: string; value: number }
+
+interface ReportFormData {
+    fechaInicio: string;
+    fechaFin: string;
+    tipoCreacion: boolean;
+    tipoCambioSede: boolean;
+    tipoCrecimiento: boolean;
+    tipoOtras: boolean;
+    incluirGraficos: boolean;
+    mail: string;
+    message: string;
+}
 
 const Profile: React.FC = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -27,6 +39,7 @@ const Profile: React.FC = () => {
     const navigate = useNavigate();
 
     const handleSubscriptionClick = async (subscription: string) => {
+
         try {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -186,6 +199,48 @@ const Profile: React.FC = () => {
 
     const handleModifyUserData = () => {
         alert('Funcionalidad para modificar datos de usuario en desarrollo.');
+    };
+
+    const handleGenerateReportPDF = async (formData: ReportFormData) => {
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            navigate('/login');
+            return;
+        }
+
+        try {
+            const response = await fetch(REPORT_URL, { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    'access_token': API_KEY,
+                },
+                body: JSON.stringify(formData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Error al generar el informe');
+            }
+
+            // Aquí puedes manejar la descarga del PDF o la respuesta del backend
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `reporte_${new Date().toISOString()}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            alert('Informe generado y descargado.');
+
+        } catch (error: any) {
+            console.error('Error al generar el informe:', error);
+            alert(`Error al generar el informe: ${error.message}`);
+        } 
     };
 
     useEffect(() => {
@@ -448,6 +503,7 @@ const Profile: React.FC = () => {
                 onClose={toggleSettingsModal}
                 onDeleteAccount={handleDeleteAccount}
                 onModifyUserData={handleModifyUserData}
+                onGenerateReport={handleGenerateReportPDF}
             />
         </div>
     );

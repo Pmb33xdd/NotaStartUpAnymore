@@ -6,6 +6,7 @@ def new_schema(new) -> dict:
             "date": new["date"],
             "location": new["location"],
             "region": new["region"],
+            "url": new["url"],
             "details": new["details"],}
 
 

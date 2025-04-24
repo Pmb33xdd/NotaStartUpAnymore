@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Query, status, Depends, Security
+from fastapi import APIRouter, HTTPException, Query, status, Depends, Security, Header
 from typing import Dict, List
 from db.schemas.user import user_schema, users_schema
 from db.schemas.new import new_schema, news_schema
 from db.schemas.company import company_schema, companies_schema
-from db.models.user import User, SubscriptionRequest, FiltersRequest
+from db.models.user import User, SubscriptionRequest, FiltersRequest, ReportFormData
 from db.models.news import News
 from send_email import MailSender
 from db.models.contact_mail import ContactMail
@@ -15,10 +15,15 @@ from db.client import db_client
 from bson import ObjectId
 import bcrypt
 from jose import JWTError, jwt
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date, time
 from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
 from dotenv import load_dotenv
 from collections import Counter
+from fastapi.responses import StreamingResponse
+from io import BytesIO
+from xhtml2pdf import pisa
+import matplotlib.pyplot as plt
+import base64
 
 load_dotenv()
 
@@ -382,3 +387,173 @@ def generar_datos_chart(type: str, companyType: str, date_filter):
         data = [{"label": tipo, "value": cantidad} for tipo, cantidad in type_counts.items()]
 
         return data
+
+from datetime import datetime, time, date
+from typing import List
+
+async def fetch_filtered_news(start_date: date, end_date: date, types: List[str]):
+    """
+    Obtiene las noticias filtradas por fecha y tipo desde la base de datos,
+    usando objetos datetime para la comparación.
+    """
+    print(start_date)
+    print(end_date)
+
+    # Convertimos start_date y end_date en datetime con hora y en UTC
+    start_datetime_utc = datetime.combine(start_date, time.min)
+    end_datetime_utc = datetime.combine(end_date, time.max)
+
+    print("\n")
+    print(start_datetime_utc)
+    print(end_datetime_utc)
+    print("\n")
+    print(types)
+
+    query = {
+        "topic": {"$in": types},
+        "date": {
+            "$gte": start_datetime_utc,
+            "$lte": end_datetime_utc
+        }
+    }
+
+    news_cursor = db_client.news.find(query)
+    results = news_cursor.to_list(None)
+    print(results)
+    return results
+
+
+def generar_grafico(news_list):
+    tipos = ["Creación", "Cambio de sede", "Crecimiento", "Otras"]
+    contador = {
+        "Creación": 0,
+        "Cambio de sede": 0,
+        "Crecimiento": 0,
+        "Otras": 0
+    }
+
+    for n in news_list:
+        if n["topic"] == "Creación de una nueva empresa":
+            contador["Creación"] += 1
+        elif n["topic"] == "Cambio de sede de una empresa":
+            contador["Cambio de sede"] += 1
+        elif n["topic"] == "Contratación abundante de empleados por parte de una empresa":
+            contador["Crecimiento"] += 1
+        else:
+            contador["Otras"] += 1
+
+    fig, ax = plt.subplots()
+    ax.bar(contador.keys(), contador.values(), color="#0077cc")
+    ax.set_title("Distribución de Noticias por Tipo")
+    ax.set_ylabel("Cantidad")
+    plt.xticks(rotation=15)
+
+    buffer = BytesIO()
+    plt.tight_layout()
+    plt.savefig(buffer, format="png")
+    plt.close(fig)
+    buffer.seek(0)
+    encoded = base64.b64encode(buffer.read()).decode('utf-8')
+    return f'<img src="data:image/png;base64,{encoded}" width="500"/>'
+
+async def generate_pdf_report(form_data: ReportFormData):
+    """
+    Genera el informe PDF utilizando xhtml2pdf.
+    """
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Informe de Noticias</title>
+        <style>
+            body {{ font-family: Arial, sans-serif;  margin: 2em; color: #333; line-height: 1.5; }}
+            h1,h2 {{ color: #004080; border-bottom: 1px solid #ccc; padding-bottom: 0.3em; }}
+            p {{ margin-bottom: 1em; }}
+            ul {{ padding-left: 1.5em;}}
+            .news-item {{ margin-bottom: 0.6em;}}
+            .italic {{ font-style: italic; }}
+        </style>
+    </head>
+    <body>
+        <h1>Informe de Noticias</h1>
+        <p><strong>Periodo:</strong> {form_data.fechaInicio} hasta {form_data.fechaFin}</p>
+        <p><strong>Tipos de Noticias Seleccionadas:</strong> {', '.join([
+            tipo
+            for tipo, seleccionado in [
+                ("Creación de una nueva empresa", form_data.tipoCreacion),
+                ("Cambio de sede de una empresa", form_data.tipoCambioSede),
+                ("Contratación abundante de empleados por parte de una empresa", form_data.tipoCrecimiento),
+                ("otras", form_data.tipoOtras),
+            ]
+            if seleccionado
+        ]) or '<span class="italic">Ninguno seleccionado</span>'}</p>
+    """
+
+    selected_types = [
+        tipo
+        for tipo, seleccionado in [
+            ("Creación de una nueva empresa", form_data.tipoCreacion),
+            ("Cambio de sede de una empresa", form_data.tipoCambioSede),
+            ("Contratación abundante de empleados por parte de una empresa", form_data.tipoCrecimiento),
+            ("otras", form_data.tipoOtras),
+        ]
+        if seleccionado
+    ]
+
+    if selected_types:
+        news_list = await fetch_filtered_news(form_data.fechaInicio, form_data.fechaFin, selected_types)
+        if news_list:
+            html_content += "<h2>Noticias Encontradas:</h2><ul>"
+            for news in news_list:
+                formatted_date = news.get("date", None)
+                if formatted_date:
+                    try:
+                        formatted_date = formatted_date.strftime("%d/%m/%Y %H:%M") if isinstance(formatted_date, datetime) else str(formatted_date)
+                    except Exception:
+                        formatted_date = str(formatted_date)
+                else:
+                    formatted_date = "Fecha desconocida"
+                html_content += f'<li class="news-item">{news.get("title", "Sin título")} ({formatted_date}) - Empresa: {news.get("company", "Desconocida")} - URL de la noticia: {news.get("url","URL no disponible")}</li>'
+            html_content += "</ul>"
+        else:
+            html_content += '<p class="italic">No se encontraron noticias para los criterios seleccionados.</p>'
+    else:
+        html_content += '<p class="italic">No se seleccionaron tipos de noticias.</p>'
+
+    if form_data.message:
+        html_content += f"<h2>Notas Adicionales:</h2><p>{form_data.message}</p>"
+
+    if form_data.incluirGraficos and news_list:
+        grafico_html = generar_grafico(news_list)
+        html_content += f"<h2>Gráfico de Distribución de Noticias:</h2>{grafico_html}"
+
+    html_content += """
+    </body>
+    </html>
+    """
+
+    buffer = BytesIO()
+    pisa_status = pisa.CreatePDF(html_content, dest=buffer)
+    if not pisa_status.err:
+        buffer.seek(0)
+        return buffer
+    else:
+        raise HTTPException(status_code=500, detail=f"Error al generar el PDF con xhtml2pdf: {pisa_status.err_msg}")
+
+
+@router.post("/generate-pdf")
+async def generate_report(form_data: ReportFormData, api_key: str = Depends(get_api_key)):
+    """
+    Endpoint para generar un informe PDF basado en los datos proporcionados.
+    """
+    try:
+        pdf_buffer = await generate_pdf_report(form_data)
+        headers = {
+            'Content-Disposition': f'attachment; filename="reporte_{date.today()}.pdf"'
+        }
+        return StreamingResponse(pdf_buffer, media_type="application/pdf", headers=headers)
+    except HTTPException as e:
+        raise e # Re-raise las HTTPExceptions para que FastAPI las maneje
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar el PDF: {str(e)}")

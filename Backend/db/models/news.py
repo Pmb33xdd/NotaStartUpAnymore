@@ -11,4 +11,5 @@ class News(BaseModel):
     date: datetime
     location: str
     region: str
+    url: str
     details: str

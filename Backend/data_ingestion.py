@@ -87,6 +87,7 @@ class Ingestion():
             descripcion = entry.description
             fecha = entry.get("published", "Fecha no disponible")
             fecha = datetime.strptime(fecha, "%a, %d %b %Y %H:%M:%S %z").strftime("%Y-%m-%d %H:%M:%S")
+            url = entry.get("guid", "url no disponible")
             print(descripcion)
             print("\n")
             response: ChatResponse = chat(model='deepseek-coder-v2:16b', messages=[
@@ -144,6 +145,7 @@ class Ingestion():
                             date = fecha,
                             location = loc,
                             region= reg,
+                            url = url,
                             details=json_response.get("detalles", "Ninguno")
                         )
                         self.insert_db_news(noticia)
@@ -183,7 +185,7 @@ class Ingestion():
                         "La noticia tratara sobre alguno de estos tres temas: \"Creación de una nueva empresa\", \"Contratación abundante de empleados por parte de una empresa\" o \"Cambio de sede de una empresa\" "
                         "Debes resumir la noticia y extraer los detalles más relevantes, excluyendo texto sin relevancia"
                         "Responde unicamente con un formato JSON que contenga los siguientes campos"
-                        '{ "tema": "Tema sobre el que trata la noticia de los tres planteados", "empresa": "Nombre de la empresa de la que trata la noticia", "tipo_empresa": "Sector en el que trabaja la empresa", "detalles": "Breve resumen que contenga la informacion relevante de la noticia excluyendo texto sin importanci" , }\n\n'
+                        '{ "tema": "Tema sobre el que trata la noticia de los tres planteados", "empresa": "Nombre de la empresa de la que trata la noticia", "tipo_empresa": "Sector en el que trabaja la empresa", "detalles": "Breve resumen que contenga la informacion relevante de la noticia excluyendo texto sin importancia" , }\n\n'
                         "Deberas decidir si el tema proporcionado como tema provisional, realmente encaja con la noticia o no, en caso de que si que encaje en el campo tema del JSON dejaras el mismo tema que se proporciono como Tema provisional, si encaja mejor con alguno de los otros dos temas posibles pondrás el que mejor encaje y en caso de que finalmente no tenga que ver con nignuno de los tres pondrás \"ninguno\""
                     )
                 },
@@ -284,6 +286,7 @@ class Ingestion():
                                 date=fecha,
                                 location= loc,
                                 region=reg,
+                                url = noticia_url,
                                 details=resumen or json_response.get("detalles", "Ninguno")
                             )
                             self.insert_db_news(noticia)
