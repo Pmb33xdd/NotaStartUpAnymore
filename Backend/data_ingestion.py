@@ -77,6 +77,7 @@ class Ingestion():
         if match:
             return match.group(0)
         return None
+
     
     def data_ingestion_rss(self):
         for entry in self.feed.entries[:10]:
@@ -289,8 +290,8 @@ class Ingestion():
                                 url = noticia_url,
                                 details=resumen or json_response.get("detalles", "Ninguno")
                             )
-                            self.insert_db_news(noticia)
-                            print(f"Noticia '{titulo}' insertada en la base de datos. \n")
+#                            self.insert_db_news(noticia)
+#                            print(f"Noticia '{titulo}' insertada en la base de datos. \n")
                             self.lista_noticias.append(noticia)
 
                     if not existing_company and (company_name != "Desconocida" and company_name != "ninguna" and nuevo_tema !="ninguno"):
@@ -300,10 +301,69 @@ class Ingestion():
 
             except json.JSONDecodeError as e:
                 print(f"Error procesando noticia '{titulo}': {e}")
-            
 
-        
-    
+        print("\n Vamos a filtrar las noticias para asegurarnos de que no haya duplicados \n")
+
+        self.lista_noticias = self.filtrar_noticias_repetidas(self.lista_noticias)
+
+        for noticia in self.lista_noticias:
+            self.insert_db_news(noticia)
+            print(f"Insertada noticia {noticia.title} en la base de datos")
+
+
+    def es_noticia_duplicada_ia(self, nueva_noticia, noticia_existente):
+        response_ai: ChatResponse = chat(
+            model='deepseek-coder-v2:16b',
+            messages=[
+                {
+                    'role': 'system',
+                    'content': (
+                        "Eres un experto en análisis de noticias empresariales. "
+                        "Tu tarea es determinar si dos noticias se refieren al mismo evento o suceso empresarial, "
+                        "aunque puedan tener textos o titulares diferentes. "
+                        "Evalúa la similitud semántica y el contexto. "
+                        "Responde únicamente en formato JSON como este:\n\n"
+                        '{ "duplicada": true, "razon": "Ambas noticias tratan sobre la misma contratación de empleados por parte de la empresa XYZ"}\n\n'
+                        'O, si no son duplicadas:\n'
+                        '{ "duplicada": false, "razon": "Hablan de temas distintos o de empresas distintas"}\n\n'
+                        "No añadas explicaciones fuera del JSON ni comillas triples."
+                    )
+                },
+                {
+                    'role': 'user',
+                    'content': (
+                        f"Noticia A:\nTítulo: {nueva_noticia.title}\nContenido: {nueva_noticia.details}\n\n"
+                        f"Noticia B:\nTítulo: {noticia_existente.title}\nContenido: {noticia_existente.details}"
+                    )
+                }
+            ]
+        )
+
+        try:
+            respuesta_json = self.extract_json(response_ai['message']['content'])
+            data = json.loads(respuesta_json)
+            return data["duplicada"], data.get("razon", "")
+        except Exception as e:
+            print("Error al interpretar la respuesta de la IA:", e)
+            return False, "Error en IA"
 
 
 
+    def filtrar_noticias_repetidas(self, lista_noticias):
+        noticias_finales = []
+
+        for noticia in lista_noticias:
+            duplicada = False
+            for existente in noticias_finales:
+                es_dup, razon = self.es_noticia_duplicada_ia(noticia, existente)
+                if es_dup:
+                    print(f"Noticia duplicada detectada: {razon}")
+                    # Combinar URLs si no están ya
+                    urls = set(existente.url.split(" || ")) | set([noticia.url])
+                    existente.url = " || ".join(urls)
+                    duplicada = True
+                    break
+            if not duplicada:
+                noticias_finales.append(noticia)
+
+        return noticias_finales

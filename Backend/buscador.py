@@ -27,6 +27,7 @@ query14 = '"plan de contratación masiva" OR "contratación de personal"'
 query15 = '"empresa incorpora" AND ("nuevos empleados" OR "nuevos trabajadores")'
 query16 = '"expansión de plantilla" OR "crecimiento de personal"'
 query17 = '"aumento de plantilla" AND ("empresa" OR "compañía")'
+query18 = 'Sanofi AND Barcelona'
 
 
 #feed = feedparser.parse(rss_Expansion_emprendedores)
@@ -40,6 +41,6 @@ for fuente in lista_urls:
     explorador.change_source_and_reset(fuente)
     explorador.data_ingestion_rss()
 
-explorador.data_ingestion_google_news(query13)
+explorador.data_ingestion_google_news(query18)
 
 explorador.send_newsletters(explorador.lista_noticias)

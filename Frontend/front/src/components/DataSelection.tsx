@@ -31,7 +31,7 @@ const DataSelection: React.FC<DataSelectionProps> = ({ onGenerate }) => {
                 <option value="ultimoMes">Último mes</option>
                 {/* ... otras opciones */}
             </select>
-            <button onClick={handleGenerate} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            <button onClick={handleGenerate} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded cursor-pointer">
                 Generar gráfico
             </button>
         </div>

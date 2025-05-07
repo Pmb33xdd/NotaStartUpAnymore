@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DataSelection from './DataSelection';
 import ChartEvaluation from './Chart_Evaluation';
 import SettingsModal from './SettingsModal';
+import ReportGenerator from './ReportGenerator';
 import { API_KEY, COMPANIES_URL, DATOS_DE_USUARIO_URL, DATOS_GRAFICOS_URL, DELETE_URL, FILTROS_FETCH_URL, FILTROS_URL, NEWS_URL, REPORT_URL } from '../urls';
 
 type NewsItem = { id: string; company: string; title: string; topic: string; details: string }
@@ -381,7 +382,7 @@ const Profile: React.FC = () => {
             </header>
 
             <div className="flex-grow p-8 bg-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
                     <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
                         <h3 className="font-bold mb-4 text-lg text-gray-700">Mis suscripciones</h3>
                         <div className="bg-white p-4 rounded-md shadow-md max-h-64 h-64 overflow-y-auto relative">
@@ -433,6 +434,7 @@ const Profile: React.FC = () => {
                             )}
                         </div>
                     </div>
+
                     <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
                         <h3 className="font-bold mb-4 text-lg text-gray-700">Noticias relacionadas con mis suscripciones</h3>
                         <div className="max-h-64 overflow-y-auto">
@@ -456,6 +458,7 @@ const Profile: React.FC = () => {
                             })()}
                         </div>
                     </div>
+
                     <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
                         <h3 className="font-bold mb-4 text-lg text-gray-700">Filtros para mis noticias</h3>
                         <button onClick={toggleFiltersOptions} className="bg-blue-400 hover:bg-blue-500 text-white rounded-md px-4 py-2 w-full text-left transition-all cursor-pointer">
@@ -491,11 +494,18 @@ const Profile: React.FC = () => {
                             )}
                         </div>
                     </div>
+
                 </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg mt-10">
+                        <ReportGenerator onGenerateReport={handleGenerateReportPDF}/>
+                    </div>
+
                 <div className="mt-8">
                     <DataSelection onGenerate={handleGenerateChart} />
                     {chartData && <ChartEvaluation data={chartData} />}
                 </div>
+
             </div>
 
             <SettingsModal
@@ -503,8 +513,8 @@ const Profile: React.FC = () => {
                 onClose={toggleSettingsModal}
                 onDeleteAccount={handleDeleteAccount}
                 onModifyUserData={handleModifyUserData}
-                onGenerateReport={handleGenerateReportPDF}
             />
+
         </div>
     );
 };

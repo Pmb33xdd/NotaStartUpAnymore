@@ -24,6 +24,7 @@ from io import BytesIO
 from xhtml2pdf import pisa
 import matplotlib.pyplot as plt
 import base64
+from collections import defaultdict
 
 load_dotenv()
 
@@ -145,7 +146,7 @@ async def register(user: User, api_key: str = Depends(get_api_key)):
             data={"sub": user.email, "type": "verify"},
         )
 
-        verification_link = f"https://notastartupanymore.onrender.com/users/verify-email?token={verification_token}"
+        verification_link = f"http://notastartupanymore-front.onrender.com/verify?token={verification_token}"
         cartero.send_verification_email(user_dict["email"], user_dict["name"], verification_link)
         return User(**new_user)
     
@@ -504,18 +505,34 @@ async def generate_pdf_report(form_data: ReportFormData):
     if selected_types:
         news_list = await fetch_filtered_news(form_data.fechaInicio, form_data.fechaFin, selected_types)
         if news_list:
-            html_content += "<h2>Noticias Encontradas:</h2><ul>"
+            # Agrupar noticias por tipo
+            grouped_news = defaultdict(list)
             for news in news_list:
-                formatted_date = news.get("date", None)
-                if formatted_date:
-                    try:
-                        formatted_date = formatted_date.strftime("%d/%m/%Y %H:%M") if isinstance(formatted_date, datetime) else str(formatted_date)
-                    except Exception:
-                        formatted_date = str(formatted_date)
-                else:
-                    formatted_date = "Fecha desconocida"
-                html_content += f'<li class="news-item">{news.get("title", "Sin título")} ({formatted_date}) - Empresa: {news.get("company", "Desconocida")} - URL de la noticia: {news.get("url","URL no disponible")}</li>'
-            html_content += "</ul>"
+                grouped_news[news.get("topic", "Otro")].append(news)
+
+            html_content += "<h2>Noticias Encontradas:</h2>"
+
+            for topic in selected_types:
+                noticias_tipo = grouped_news.get(topic, [])
+                if noticias_tipo:
+                    # Ordenar por fecha descendente
+                    noticias_tipo.sort(key=lambda n: n.get("date", datetime.min), reverse=True)
+                    html_content += f"<h3>{topic}</h3><ul>"
+                    for news in noticias_tipo:
+                        formatted_date = news.get("date", None)
+                        if formatted_date:
+                            try:
+                                formatted_date = formatted_date.strftime("%d/%m/%Y %H:%M") if isinstance(formatted_date, datetime) else str(formatted_date)
+                            except Exception:
+                                formatted_date = str(formatted_date)
+                        else:
+                            formatted_date = "Fecha desconocida"
+                        html_content += (
+                            f'<li class="news-item">{news.get("title", "Sin título")} '
+                            f'({formatted_date}) - Empresa: {news.get("company", "Desconocida")} '
+                            f'- URL de la noticia: {news.get("url", "URL no disponible")}</li>'
+                        )
+                    html_content += "</ul>"
         else:
             html_content += '<p class="italic">No se encontraron noticias para los criterios seleccionados.</p>'
     else:
