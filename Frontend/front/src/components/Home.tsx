@@ -121,6 +121,10 @@ const Home: React.FC = () => {
                     </div>
                 </div>
             </section>
+            
+            <footer className="w-full">
+                <img src="/images/Logo_Nombre_Proyecto.png" alt="Footer completo" className="w-full h-screen bg-purple-100 object-cover"/>
+            </footer>
         </div>
     );
 };

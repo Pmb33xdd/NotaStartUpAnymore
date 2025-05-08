@@ -515,6 +515,11 @@ const Profile: React.FC = () => {
                 onModifyUserData={handleModifyUserData}
             />
 
+                        
+            <footer className="w-full">
+                <img src="/images/Logo_Nombre_Proyecto.png" alt="Footer completo" className="w-full h-screen bg-purple-100 object-cover"/>
+            </footer>
+
         </div>
     );
 };
