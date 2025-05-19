@@ -8,35 +8,21 @@ on:
 jobs:
   buscar_noticias:
     runs-on: ubuntu-latest
-    services:
-      ollama:
-        image: ollama/ollama:latest
-        ports:
-          - 11434:11434
-        volumes:
-          - ollama_data:/root/.ollama  # Persistir los datos de Ollama entre ejecuciones
-
+    container:
+      image: ollama/ollama:latest
+      options: --privileged  # Necesario si Ollama necesita acceso extendido
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13.1'
-
       - name: Instalar dependencias
         run: |
-          python -m pip install --upgrade pip
+          apt update && apt install -y curl python3-pip
           pip install -r Backend/requirements.txt
-          pip install feedparser
-          pip install python-dotenv
-          pip install ollama
+          pip install feedparser python-dotenv ollama
 
       - name: Descargar modelo de Ollama
         run: |
-          sleep 20
-          curl http://localhost:11434/api/tags #Check if server is up
           ollama pull deepseek-coder-v2:16b
 
       - name: Ejecutar el script buscador.py
