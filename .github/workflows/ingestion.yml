@@ -13,10 +13,9 @@ jobs:
         image: ollama/ollama:latest
         ports:
           - 11434:11434
-        #   volumes: # Remove or comment out volumes, unless you have a very specific need to persist data between runs
-        #     - ollama_data:/root/.ollama
-    #    container:
-    #      name: ollama
+        volumes:
+          - ollama_data:/root/.ollama  # Persistir los datos de Ollama entre ejecuciones
+
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
@@ -33,6 +32,11 @@ jobs:
           pip install feedparser
           pip install python-dotenv
           pip install ollama
+
+      - name: Descargar modelo de Ollama
+        run: |
+          curl http://localhost:11434/api/tags #Check if server is up
+          ollama pull deepseek-coder-v2:16b
 
       - name: Ejecutar el script buscador.py
         run: python Backend/buscador.py
