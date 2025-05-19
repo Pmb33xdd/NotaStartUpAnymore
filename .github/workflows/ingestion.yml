@@ -35,6 +35,7 @@ jobs:
 
       - name: Descargar modelo de Ollama
         run: |
+          sleep 20
           curl http://localhost:11434/api/tags #Check if server is up
           ollama pull deepseek-coder-v2:16b
 
