@@ -1,0 +1,37 @@
+name: Ejecutar Buscador de Noticias
+
+on:
+  schedule:
+    - cron: '0 14 * * *'  # Se ejecuta cada hora (puedes ajustar la programación)
+  workflow_dispatch: # Permite la ejecución manual desde la interfaz de GitHub
+  
+jobs:
+  buscar_noticias:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+      
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.1'  # Especifica la versión de Python que necesitas
+      
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt  # Si tienes un archivo requirements.txt
+          pip install feedparser
+          pip install python-dotenv
+          pip install ollama
+
+      - name: Ejecutar el script buscador.py
+        run: python Backend/buscador.py
+        env:
+          API_KEY_GOOGLE_NEWS: ${{ secrets.API_KEY }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          ALGORITHM: ${{ secrets.ALGORITHM }}
