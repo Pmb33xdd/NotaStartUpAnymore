@@ -11,6 +11,7 @@ from db.models.company import Company
 from db.schemas.user import users_schema
 from db.client import db_client
 from send_email import MailSender
+from typing import Optional
 import feedparser
 from dotenv import load_dotenv
 
@@ -49,7 +50,7 @@ class Ingestion():
         del company_dict["id"]
         db_client.companies.insert_one(company_dict)
 
-    def search_company(self, company_name: str) -> Company | None:
+    def search_company(self, company_name: str) -> Optional[Company]:
         company_data = db_client.companies.find_one({"name": company_name})
         if company_data:
             return Company(**company_data)
