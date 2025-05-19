@@ -1,0 +1,12 @@
+version: '3.9'
+services:
+  ollama:
+    image: ollama/ollama:latest  # Usa la imagen de Ollama
+    ports:
+      - "11434:11434" # Expone el puerto de Ollama
+    # Para persistir datos (opcional, si necesitas que los modelos persistan entre ejecuciones)
+    volumes:
+      - ollama_data:/root/.ollama
+
+volumes:
+  ollama_data: # Define un volumen para los datos de Ollama

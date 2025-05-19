@@ -2,25 +2,34 @@ name: Ejecutar Buscador de Noticias
 
 on:
   schedule:
-    - cron: '0 14 * * *'  # Se ejecuta cada hora (puedes ajustar la programación)
-  workflow_dispatch: # Permite la ejecución manual desde la interfaz de GitHub
-  
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+
 jobs:
   buscar_noticias:
     runs-on: ubuntu-latest
+    services:
+      ollama:
+        image: ollama/ollama:latest
+        ports:
+          - 11434:11434
+        #   volumes: # Remove or comment out volumes, unless you have a very specific need to persist data between runs
+        #     - ollama_data:/root/.ollama
+    #    container:
+    #      name: ollama
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
-      
+
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13.1'  # Especifica la versión de Python que necesitas
-      
+          python-version: '3.13.1'
+
       - name: Instalar dependencias
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt  # Si tienes un archivo requirements.txt
+          pip install -r Backend/requirements.txt
           pip install feedparser
           pip install python-dotenv
           pip install ollama
