@@ -50,7 +50,7 @@ class Ingestion():
         del company_dict["id"]
         db_client.companies.insert_one(company_dict)
 
-    def search_company(self, company_name: str) -> Optional[Company]:
+    def search_company(self, company_name: str) -> Company | None:
         company_data = db_client.companies.find_one({"name": company_name})
         if company_data:
             return Company(**company_data)

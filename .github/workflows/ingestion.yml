@@ -28,7 +28,7 @@ jobs:
         run: ollama pull deepseek-coder-v2:16b
 
       - name: Ejecutar el script buscador.py
-        run: python3 Backend/buscador.py
+        run: python Backend/buscador.py
         env:
           API_KEY_GOOGLE_NEWS: ${{ secrets.API_KEY }}
           SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
