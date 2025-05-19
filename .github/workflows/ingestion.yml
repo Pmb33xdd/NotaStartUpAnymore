@@ -9,21 +9,23 @@ jobs:
   buscar_noticias:
     runs-on: ubuntu-latest
     container:
-      image: ollama/ollama:latest
-      options: --privileged  # Necesario si Ollama necesita acceso extendido
+      image: zombis234/ollama-python:latest
+      options: --privileged  # Necesario para que funcione Ollama
+
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Instalar dependencias
+      - name: Instalar dependencias del proyecto
+        run: pip install -r Backend/requirements.txt
+
+      - name: Iniciar Ollama en segundo plano
         run: |
-          apt update && apt install -y curl python3-pip
-          pip install -r Backend/requirements.txt
-          pip install feedparser python-dotenv ollama
+          ollama serve &  # inicia el servidor en segundo plano
+          sleep 10        # espera a que se levante correctamente
 
       - name: Descargar modelo de Ollama
-        run: |
-          ollama pull deepseek-coder-v2:16b
+        run: ollama pull deepseek-coder-v2:16b
 
       - name: Ejecutar el script buscador.py
         run: python Backend/buscador.py
