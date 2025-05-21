@@ -1,51 +1,55 @@
-name: Ingestar noticias con IA
+name: Ejecutar Buscador de Noticias
 
 on:
+  schedule:
+    - cron: '0 14 * * *'  # Cada día a las 14:00 UTC
   workflow_dispatch:
 
 jobs:
-  run-ingestion:
+  buscar_noticias:
     runs-on: ubuntu-latest
-
-    services:
-      ollama:
-        image: ollama/ollama:latest
-        ports:
-          - 11434:11434
-        options: >-
-          --health-cmd "curl -f http://localhost:11434 || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    container:
+      image: zombis234/ollama-python:latest
+      options: --privileged  # Necesario para usar Ollama
 
     steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v3
+      - name: Checkout del código
+        uses: actions/checkout@v4
 
-      - name: Instalar Python y dependencias
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
+      - name: Instalar dependencias del proyecto
+        run: pip install -r Backend/requirements.txt
 
-      - name: Instalar requirements
-        run: pip install -r requirements.txt
-
-      - name: Esperar a que Ollama esté disponible
+      - name: Configurar OLLAMA_HOST, iniciar Ollama en segundo plano y esperar a que esté disponible
         run: |
+          # Exporta OLLAMA_HOST para que el servidor de Ollama escuche en todas las interfaces.
+          export OLLAMA_HOST=0.0.0.0:11434 
+          ollama serve &
+
+          echo "Esperando que Ollama esté disponible en 0.0.0.0:11434..."
           for i in {1..30}; do
-            if curl -s http://localhost:11434 | grep -q "Ollama"; then
-              echo "✅ Ollama está disponible."
+            # Comprueba la disponibilidad de Ollama usando la misma IP.
+            if curl -s http://0.0.0.0:11434 > /dev/null; then 
+              echo "Ollama está listo."
               break
             fi
-            echo "⏳ Esperando a que Ollama esté disponible..."
+            echo "Esperando... ($i)"
             sleep 2
           done
 
-      - name: Descargar modelo deepseek-coder-v2:16b
-        run: |
-          curl http://localhost:11434/api/pull \
-            -d '{"name": "deepseek-coder-v2:16b"}' \
-            -H "Content-Type: application/json"
+      - name: Descargar modelo (deepseek-coder-v2:16b)
+        # La variable OLLAMA_HOST no es estrictamente necesaria aquí, pero no hace daño.
+        run: ollama pull deepseek-coder-v2:16b
 
-      - name: Ejecutar script Python
+      - name: Ejecutar el script buscador.py
         run: python Backend/buscador.py
+        env:
+          # Es crucial que tu script de Python también sepa dónde buscar a Ollama.
+          # La librería 'ollama-python' lee esta variable.
+          OLLAMA_HOST: 0.0.0.0:11434 
+          API_KEY_GOOGLE_NEWS: ${{ secrets.API_KEY }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          ALGORITHM: ${{ secrets.ALGORITHM }}
