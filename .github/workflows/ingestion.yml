@@ -21,49 +21,41 @@ jobs:
 
       - name: Configurar OLLAMA_HOST, iniciar Ollama en segundo plano y esperar a que esté disponible
         run: |
-          # Aseguramos que Ollama escuche en IPv4 y IPv6 (0.0.0.0 o [::])
-          # y también que la variable se exporte para futuras llamadas dentro del mismo shell.
           export OLLAMA_HOST=0.0.0.0:11434 
-          
-          # Inicia Ollama en segundo plano. Redirige la salida a un archivo para depuración.
           ollama serve > ollama_server.log 2>&1 &
           
-          # Guarda el PID del proceso de Ollama para depuración.
           OLLAMA_PID=$!
           echo "Ollama PID: $OLLAMA_PID"
 
           echo "Esperando que Ollama esté disponible en 0.0.0.0:11434..."
-          # Aumentamos el número de intentos y el tiempo de espera para mayor robustez
-          for i in {1..60}; do # 60 intentos * 3 segundos = 180 segundos (3 minutos)
-            if curl -s -f http://0.0.0.0:11434 > /dev/null; then # -f para fail-silently
+          for i in {1..60}; do 
+            if curl -s -f http://0.0.0.0:11434 > /dev/null; then 
               echo "Ollama está listo."
               break
             fi
             echo "Esperando... ($i/60)"
-            sleep 3 # Espera 3 segundos
+            sleep 3 
           done
 
-          # Comprobación final después del bucle
           if ! curl -s -f http://0.0.0.0:11434 > /dev/null; then
             echo "Error: Ollama no se inició correctamente o no es accesible."
             echo "Contenido del log de Ollama:"
-            cat ollama_server.log # Muestra el log de Ollama para depuración
-            exit 1 # Falla el paso si Ollama no está listo
+            cat ollama_server.log 
+            exit 1 
           fi
           
           echo "Ollama está operativo y accesible."
 
       - name: Descargar modelo (deepseek-coder-v2:16b)
         run: |
-          # Aseguramos OLLAMA_HOST para el comando pull también, aunque a menudo no es crítico.
           export OLLAMA_HOST=0.0.0.0:11434
           ollama pull deepseek-coder-v2:16b
 
       - name: Ejecutar el script buscador.py
         run: python Backend/buscador.py
         env:
-          # Vuelve a exportar OLLAMA_HOST para el entorno del script Python.
           OLLAMA_HOST: 0.0.0.0:11434 
+          MONGO_CREDENCIALES: ${{ secrets.MONGO_CREDENCIALES }} 
           API_KEY_GOOGLE_NEWS: ${{ secrets.API_KEY }}
           SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
