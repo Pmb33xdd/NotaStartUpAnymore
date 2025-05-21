@@ -2,7 +2,7 @@ name: Ejecutar Buscador de Noticias
 
 on:
   schedule:
-    - cron: '0 14 * * *'
+    - cron: '0 14 * * *'  # Cada día a las 14:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: zombis234/ollama-python:latest
-      options: --privileged  # Necesario para que funcione Ollama
+      options: --privileged  # Necesario para usar Ollama
 
     steps:
       - name: Checkout del código
@@ -19,12 +19,21 @@ jobs:
       - name: Instalar dependencias del proyecto
         run: pip install -r Backend/requirements.txt
 
-      - name: Iniciar Ollama en segundo plano
+      - name: Iniciar Ollama en segundo plano y esperar a que esté disponible
         run: |
-          ollama serve &  # inicia el servidor en segundo plano
-          sleep 10        # espera a que se levante correctamente
+          ollama serve &
 
-      - name: Descargar modelo de Ollama
+          echo "Esperando que Ollama esté disponible en localhost:11434..."
+          for i in {1..30}; do
+            if curl -s http://localhost:11434 > /dev/null; then
+              echo "Ollama está listo."
+              break
+            fi
+            echo "Esperando... ($i)"
+            sleep 2
+          done
+
+      - name: Descargar modelo (deepseek-coder-v2:16b)
         run: ollama pull deepseek-coder-v2:16b
 
       - name: Ejecutar el script buscador.py
