@@ -3,13 +3,13 @@ import requests
 import os
 import json
 from ollama import chat
-from datetime import datetime
+from datetime import datetime, timezone
 from ollama import ChatResponse
 from bs4 import BeautifulSoup
 from db.models.news import News
 from db.models.company import Company
 from db.schemas.user import users_schema
-from db.client import db_client
+from db.client import db_client, metadata_collection
 from send_email import MailSender
 from typing import Optional
 import feedparser
@@ -34,7 +34,31 @@ class Ingestion():
         self.feed = feedparser.parse(url)
         self.lista_noticias: list[News] = []
         self.contador = contador
+
+    def _get_last_run_date_from_db(self) -> Optional[datetime]:
+        """Lee la última fecha de ejecución desde la base de datos."""
+        # Usa metadata_collection directamente aquí
+        metadata = metadata_collection.find_one({"_id": "last_ingestion_timestamp"})
+        if metadata and "timestamp" in metadata:
+            try:
+                # MongoDB almacena datetime como objetos datetime de Python
+                return metadata["timestamp"]
+            except Exception as e:
+                print(f"Advertencia: Formato de fecha inválido en DB para last_ingestion_timestamp. {e}")
+                return None
+        return None
     
+    def _update_last_run_date_in_db(self):
+        """Actualiza la fecha de la última ejecución en la base de datos al momento actual."""
+        now = datetime.now()
+        # Usa metadata_collection directamente aquí
+        metadata_collection.update_one(
+            {"_id": "last_ingestion_timestamp"},
+            {"$set": {"timestamp": now}},
+            upsert=True # Si el documento no existe, lo crea
+        )
+        print(f"Fecha de última ejecución actualizada en DB a: {now.strftime('%Y-%m-%d %H:%M:%S')}")
+
     def change_source_and_reset(self, url_nueva):
         self.feed = feedparser.parse(url_nueva)
         self.lista_noticias = []
@@ -81,7 +105,39 @@ class Ingestion():
 
     
     def data_ingestion_rss(self):
+        last_run_date = self._get_last_run_date_from_db()
+        print(f"Última fecha de ejecución (RSS): {last_run_date}")
+
         for entry in self.feed.entries[:10]:
+
+            fecha_str = entry.get("published", "Fecha no disponible")
+            try:
+                # Si la fecha tiene información de zona horaria:
+                if 'z' in "%a, %d %b %Y %H:%M:%S %z": # Comprobación simple para el formato
+                    published_date_aware = datetime.strptime(fecha_str, "%a, %d %b %Y %H:%M:%S %z")
+                else:
+                    # Si no tiene información de zona horaria, asumimos como UTC o la zona local del servidor
+                    # Lo más seguro es tratarla como UTC si la fuente es consistente o inferir.
+                    published_date_aware = datetime.strptime(fecha_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+            except ValueError:
+                print(f"Advertencia: No se pudo parsear la fecha '{fecha_str}' para la noticia '{entry.title}'. Saltando.")
+                continue # Salta esta noticia si la fecha no se puede parsear
+
+            # Asegurarse de que ambas fechas (last_run_date y published_date_aware) sean timezone-aware
+            # y estén en el mismo timezone (preferiblemente UTC) para una comparación precisa.
+            if last_run_date and last_run_date.tzinfo is None:
+                # Si last_run_date no tiene info de timezone, asumimos como UTC
+                last_run_date = last_run_date.replace(tzinfo=timezone.utc)
+            
+            if published_date_aware and published_date_aware.tzinfo is None:
+                 # Si la fecha de la noticia no tiene info de timezone, asumimos como UTC
+                published_date_aware = published_date_aware.replace(tzinfo=timezone.utc)
+
+
+            if last_run_date and published_date_aware <= last_run_date:
+                print(f"Noticia '{entry.title}' es antigua (fecha: {published_date_aware}). Saltando.")
+                continue # Saltar noticias que no son más recientes
+
             print(f"Noticia {self.contador}")
             titulo = entry.title
             print(titulo)
@@ -221,6 +277,9 @@ class Ingestion():
     
         
     def data_ingestion_google_news(self, query):
+        last_run_date = self._get_last_run_date_from_db()
+        print(f"Última fecha de ejecución (Google News): {last_run_date}")
+
         url = f"https://newsapi.org/v2/everything?q={query}&apiKey={API_KEY}"
         response = requests.get(url)
         data = response.json()
@@ -229,7 +288,24 @@ class Ingestion():
             titulo = article["title"]
             descripcion = article.get("description", "")
             noticia_url = article["url"]
-            fecha = article["publishedAt"]
+            fecha_str = article["publishedAt"]
+
+            try:
+                # Convertir la fecha de Google News (que es ISO 8601 y ya es timezone-aware)
+                published_date_aware = datetime.strptime(fecha_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+            except ValueError:
+                print(f"Advertencia: No se pudo parsear la fecha '{fecha_str}' para la noticia '{titulo}'. Saltando.")
+                continue # Salta esta noticia si la fecha no se puede parsear
+
+            # Asegurarse de que last_run_date sea timezone-aware para una comparación precisa
+            if last_run_date and last_run_date.tzinfo is None:
+                last_run_date = last_run_date.replace(tzinfo=timezone.utc)
+
+            if last_run_date and published_date_aware <= last_run_date:
+                print(f"Noticia '{titulo}' es antigua (fecha: {published_date_aware}). Saltando.")
+                continue # Saltar noticias que no son más recientes
+
+
             fecha = datetime.strptime(fecha, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H:%M:%S")
 
             print(f"Procesando noticia: {titulo} \n")
@@ -303,13 +379,13 @@ class Ingestion():
             except json.JSONDecodeError as e:
                 print(f"Error procesando noticia '{titulo}': {e}")
 
-        print("\n Vamos a filtrar las noticias para asegurarnos de que no haya duplicados \n")
-
-        self.lista_noticias = self.filtrar_noticias_repetidas(self.lista_noticias)
-
-        for noticia in self.lista_noticias:
-            self.insert_db_news(noticia)
-            print(f"Insertada noticia {noticia.title} en la base de datos")
+#        print("\n Vamos a filtrar las noticias para asegurarnos de que no haya duplicados \n")
+#
+#        self.lista_noticias = self.filtrar_noticias_repetidas(self.lista_noticias)
+#
+#        for noticia in self.lista_noticias:
+#            self.insert_db_news(noticia)
+#            print(f"Insertada noticia {noticia.title} en la base de datos")
 
 
     def es_noticia_duplicada_ia(self, nueva_noticia, noticia_existente):

@@ -39,4 +39,16 @@ for fuente in lista_urls:
 for query in queries:
     explorador.data_ingestion_google_news(query)
 
+print("\n#### Iniciando filtrado y almacenamiento final de noticias ####\n")
+
+if explorador.lista_noticias:
+    explorador.lista_noticias = explorador.filtrar_noticias_repetidas(explorador.lista_noticias)
+
+    for noticia in explorador.lista_noticias:
+        explorador.insert_db_news(noticia)
+        print(f"Noticia final '{noticia.title}' insertada en la base de datos.")
+else:
+    print("No se recolectaron noticias para filtrar e insertar.")
+
 explorador.send_newsletters(explorador.lista_noticias)
+explorador._update_last_run_date_in_db()
