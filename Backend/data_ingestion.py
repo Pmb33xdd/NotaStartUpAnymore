@@ -3,7 +3,7 @@ import requests
 import os
 import json
 from ollama import chat
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from ollama import ChatResponse
 from bs4 import BeautifulSoup
 from db.models.news import News
@@ -51,10 +51,10 @@ class Ingestion():
     def _update_last_run_date_in_db(self):
         """Actualiza la fecha de la última ejecución en la base de datos al momento actual."""
         now = datetime.now()
-        # Usa metadata_collection directamente aquí
+        new_last_run_date = now - timedelta(days=2) 
         metadata_collection.update_one(
             {"_id": "last_ingestion_timestamp"},
-            {"$set": {"timestamp": now}},
+            {"$set": {"timestamp": new_last_run_date}},
             upsert=True # Si el documento no existe, lo crea
         )
         print(f"Fecha de última ejecución actualizada en DB a: {now.strftime('%Y-%m-%d %H:%M:%S')}")
