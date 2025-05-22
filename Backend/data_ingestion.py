@@ -306,7 +306,7 @@ class Ingestion():
                 continue # Saltar noticias que no son más recientes
 
 
-            fecha = datetime.strptime(fecha, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H:%M:%S")
+            fecha = datetime.strptime(fecha_str, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H:%M:%S")
 
             print(f"Procesando noticia: {titulo} \n")
 
