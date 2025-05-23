@@ -51,4 +51,4 @@ else:
     print("No se recolectaron noticias para filtrar e insertar.")
 
 explorador.send_newsletters(explorador.lista_noticias)
-explorador._update_last_run_date_in_db()
+explorador._update_last_run_date_in_db(explorador.lista_noticias)
