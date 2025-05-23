@@ -48,16 +48,29 @@ class Ingestion():
                 return None
         return None
     
-    def _update_last_run_date_in_db(self):
-        """Actualiza la fecha de la última ejecución en la base de datos al momento actual."""
-        now = datetime.now()
-        new_last_run_date = now - timedelta(days=2) 
-        metadata_collection.update_one(
+    def _update_last_run_date_in_db(self, news_list: list[News]):
+        """
+        Actualiza la fecha de la última ejecución en la base de datos a la fecha de la noticia más reciente
+        de la lista proporcionada.
+        """
+        if not news_list:
+            print("La lista de noticias está vacía. No se actualiza la fecha de última ejecución.")
+            return
+
+        # Encontrar la fecha más reciente entre todas las noticias
+        latest_news_date = None
+        for news_item in news_list:
+            if latest_news_date is None or news_item.date > latest_news_date:
+                latest_news_date = news_item.date
+
+        date_to_save = latest_news_date
+
+        self.metadata_collection.update_one(
             {"_id": "last_ingestion_timestamp"},
-            {"$set": {"timestamp": new_last_run_date}},
-            upsert=True # Si el documento no existe, lo crea
+            {"$set": {"timestamp": date_to_save}},
+            upsert=True  # Si el documento no existe, lo crea
         )
-        print(f"Fecha de última ejecución actualizada en DB a: {now.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Fecha de última ejecución actualizada en DB a: {date_to_save.strftime('%Y-%m-%d %H:%M:%S')}")
 
     def change_source_and_reset(self, url_nueva):
         self.feed = feedparser.parse(url_nueva)
