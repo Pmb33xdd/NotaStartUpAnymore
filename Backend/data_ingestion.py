@@ -65,7 +65,7 @@ class Ingestion():
 
         date_to_save = latest_news_date
 
-        self.metadata_collection.update_one(
+        metadata_collection.update_one(
             {"_id": "last_ingestion_timestamp"},
             {"$set": {"timestamp": date_to_save}},
             upsert=True  # Si el documento no existe, lo crea
