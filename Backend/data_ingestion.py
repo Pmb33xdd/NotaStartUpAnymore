@@ -277,12 +277,13 @@ class Ingestion():
                     print(json_response)
                     topic = json_response.get("tema","ninguno")
                     tipo_empresa = json_response.get("tipo_empresa", "Desconocido")
+                    nombre_empresa = json_response.get("empresa", "Desconocida")
                     details = json_response.get("detalles", "Desconocidos")
 
             except json.JSONDecodeError as e:
                 print(f"Error procesando noticia '{title}': {e}")
                 
-            return topic, details, tipo_empresa
+            return topic, details, tipo_empresa, nombre_empresa
         
         except Exception as e:
             print(f"Error extrayendo información de {url}: {e}")
@@ -360,18 +361,15 @@ class Ingestion():
                     print(json_response)
                     tema = json_response.get("tema", "ninguno")
                     titulo = json_response.get("noticia","ninguno")
-                    company_name = json_response.get("empresa", "Desconocida")
-                    company_type = json_response.get("tipo_empresa", "Desconocido")
                     loc = json_response.get("ambito", "Desconocido")
                     reg = json_response.get("region", "Desconocido")
                     nuevo_tema = "ninguno"
-                    existing_company = self.search_company(company_name)
-
+                    
                     if tema != "ninguno":
-                        nuevo_tema, resumen, nuevo_tipo_empresa = self.scrape_article(noticia_url, titulo, tema)  # 🔍 Scraping
+                        nuevo_tema, resumen, nuevo_tipo_empresa, nuevo_nombre_empresa = self.scrape_article(noticia_url, titulo, tema)  # 🔍 Scraping
                         if (nuevo_tema != "ninguno"):
                             noticia = News(
-                                company=company_name,
+                                company=nuevo_nombre_empresa,
                                 title=titulo,
                                 topic=nuevo_tema,
                                 date=fecha,
@@ -383,11 +381,12 @@ class Ingestion():
 #                            self.insert_db_news(noticia)
 #                            print(f"Noticia '{titulo}' insertada en la base de datos. \n")
                             self.lista_noticias.append(noticia)
+                            existing_company = self.search_company(nuevo_nombre_empresa)
 
-                    if not existing_company and (company_name != "Desconocida" and company_name != "ninguna" and nuevo_tema !="ninguno"):
-                        new_company = Company(name=company_name, type=nuevo_tipo_empresa, details="Desconocidos")
-                        self.insert_db_company(new_company)
-                        print(f"Compañía '{company_name}' insertada en la base de datos. \n")
+                            if not existing_company and (nuevo_nombre_empresa != "Desconocida" and nuevo_nombre_empresa != "ninguna" and nuevo_tema !="ninguno"):
+                                new_company = Company(name=nuevo_nombre_empresa, type=nuevo_tipo_empresa, details="Desconocidos")
+                                self.insert_db_company(new_company)
+                                print(f"Compañía '{nuevo_nombre_empresa}' insertada en la base de datos. \n")
 
             except json.JSONDecodeError as e:
                 print(f"Error procesando noticia '{titulo}': {e}")
