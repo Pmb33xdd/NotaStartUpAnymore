@@ -107,7 +107,7 @@ class Ingestion():
 
             if user_news:
                 print(f"Enviando correo a {user['email']} con {len(user_news)} noticias.")
-                cartero.send_email(user["email"], user_news)
+                cartero.send_email(user["email"], user_news, user["name"])
 
     def extract_json(self, content: str):
         # Busca el JSON dentro de la respuesta
