@@ -50,7 +50,6 @@ const Login: React.FC = () => {
     return (
         <div className="flex h-screen">
             <div className="w-1/2 bg-[url('/images/Imagen_login1.jpg')] bg-cover bg-no-repeat">
-                {/* Puedes agregar contenido adicional aquí si lo deseas */}
             </div>
             <div className="w-1/2 flex justify-center items-center bg-green-100">
                 <div className="bg-white p-8 rounded-lg shadow-md w-96">

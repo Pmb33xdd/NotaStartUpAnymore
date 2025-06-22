@@ -59,7 +59,7 @@ const Home: React.FC = () => {
     };
 
     return (
-        <div className="relative w-screen h-screen overflow-y-auto font-sans">
+        <div className="relative w-full overflow-y-auto font-sans">
             <div className="relative w-full h-screen">
                 <video autoPlay muted loop className="absolute top-0 left-0 w-full h-full object-cover brightness-75">
                     <source src="/videos/Startup_video.mp4" type="video/mp4" />

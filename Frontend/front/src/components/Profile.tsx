@@ -169,7 +169,7 @@ const Profile: React.FC = () => {
         if (window.confirm('¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.')) {
             try {
                 const token = localStorage.getItem('token');
-                const userID = userData?.id; // Asegúrate de tener `userData.id` disponible
+                const userID = userData?.id;
                 if (!token || !userID) {
                     navigate('/login');
                     return;
@@ -357,7 +357,7 @@ const Profile: React.FC = () => {
     const toggleSettingsModal = () => {
         setIsSettingsModalOpen(!isSettingsModalOpen);
     };
-
+ 
     if (!userData) {
         return <div>Cargando...</div>;
     }

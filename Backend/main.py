@@ -1,29 +1,28 @@
 import os
 import uvicorn
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware  # Importa el middleware CORS
+from fastapi.middleware.cors import CORSMiddleware 
 from routers import  users
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
 origins = [
-    "http://localhost:5173",  # Reemplaza 3000 con el puerto correcto de React
-    "http://localhost",       # Incluye localhost sin puerto
-    "http://127.0.0.1:5173", # Incluye 127.0.0.1 por si acaso
+    "http://localhost:5173",  
+    "http://localhost",       
+    "http://127.0.0.1:5173", 
     "https://notastartupanymore-front.onrender.com"
-    # Puedes añadir otros orígenes aquí si es necesario (ej: tu dominio en producción)
+
 ]
 
-app.add_middleware(  # Añade el middleware CORS
+app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,  # Si necesitas cookies o autenticación
-    allow_methods=["*"],      # Permite todos los métodos
-    allow_headers=["*"],      # Permite todos los encabezados
+    allow_credentials=True,  
+    allow_methods=["*"],     
+    allow_headers=["*"],
 )
 
-# Routers (DEBEN ir DESPUÉS del middleware CORS)
 app.include_router(users.router)
 
 # Static

@@ -37,7 +37,7 @@ class Ingestion():
 
     def _get_last_run_date_from_db(self) -> Optional[datetime]:
         """Lee la última fecha de ejecución desde la base de datos."""
-        # Usa metadata_collection directamente aquí
+
         metadata = metadata_collection.find_one({"_id": "last_ingestion_timestamp"})
         if metadata and "timestamp" in metadata:
             try:
@@ -126,11 +126,10 @@ class Ingestion():
             fecha_str = entry.get("published", "Fecha no disponible")
             try:
                 # Si la fecha tiene información de zona horaria:
-                if 'z' in "%a, %d %b %Y %H:%M:%S %z": # Comprobación simple para el formato
+                if 'z' in "%a, %d %b %Y %H:%M:%S %z": 
                     published_date_aware = datetime.strptime(fecha_str, "%a, %d %b %Y %H:%M:%S %z")
                 else:
                     # Si no tiene información de zona horaria, asumimos como UTC o la zona local del servidor
-                    # Lo más seguro es tratarla como UTC si la fuente es consistente o inferir.
                     published_date_aware = datetime.strptime(fecha_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
             except ValueError:
                 print(f"Advertencia: No se pudo parsear la fecha '{fecha_str}' para la noticia '{entry.title}'. Saltando.")
@@ -246,9 +245,12 @@ class Ingestion():
             content = " ".join([p.get_text() for p in paragraphs])
             if len(content) > 1000:  # Limitamos a 1000 caracteres ya que de otra forma al ser un prompt demasiado grande tendremos un error de RAM
                 content = content[:1000] + "..."
+            
+            if not content.strip():
+                print(f"No se pudo extraer contenido relevante de la noticia '{title}'.")
+                return "ninguno", "No se pudo extraer contenido relevante", "Desconocido", "Desconocida"
 
-            if content:
-                 response: ChatResponse = chat(model='deepseek-coder-v2:16b', messages=[
+            response: ChatResponse = chat(model='deepseek-coder-v2:16b', messages=[
                 {
                     'role': 'system',
                     'content': (
@@ -266,8 +268,6 @@ class Ingestion():
                 },
             ])
                  
-            else:
-                return None
             
             try:
                 json_content = self.extract_json(response['message']['content'])
@@ -279,15 +279,18 @@ class Ingestion():
                     tipo_empresa = json_response.get("tipo_empresa", "Desconocido")
                     nombre_empresa = json_response.get("empresa", "Desconocida")
                     details = json_response.get("detalles", "Desconocidos")
+                    return topic, details, tipo_empresa, nombre_empresa
+                else:
+                    print(f"No se encontró un JSON válido en la respuesta de la IA para la noticia '{title}'.")
+                    return "ninguno", "No se pudo extraer contenido relevante", "Desconocido", "Desconocida"
 
             except json.JSONDecodeError as e:
                 print(f"Error procesando noticia '{title}': {e}")
-                
-            return topic, details, tipo_empresa, nombre_empresa
-        
+                return "ninguno", "No se pudo extraer contenido relevante", "Desconocido", "Desconocida"
+       
         except Exception as e:
             print(f"Error extrayendo información de {url}: {e}")
-            return None
+            return "ninguno", "Error de scraping", "Desconocido", "Desconocida"
     
         
     def data_ingestion_google_news(self, query):
