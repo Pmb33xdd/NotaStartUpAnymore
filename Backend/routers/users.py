@@ -19,7 +19,7 @@ from datetime import datetime, timedelta, timezone, date, time
 from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
 from dotenv import load_dotenv
 from collections import Counter
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from report_generator import ReportGenerator
 
 load_dotenv()
@@ -178,7 +178,7 @@ async def verify_email(token: str):
 @router.post("/login", response_model=dict)
 async def login(login_data: LoginData, api_key: str = Depends(get_api_key)):  # Usa LoginData como tipo de parámetro
     try:
-        db_user = search_user("email", login_data.email)  # Accede al email desde login_data
+        db_user = search_user("email", login_data.email) 
         if not db_user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas"
@@ -386,6 +386,19 @@ def generar_datos_chart(type: str, companyType: str, date_filter):
 
         return data
 
+@router.get("/api/company-types")
+def get_company_types(api_key: str = Depends(get_api_key)):
+    pass
+    try:
+        types = db_client.companies.distinct("type")
+        print(types)
+        data = [{"label": tipo} for tipo in types]
+        print(data)
+        return data
+    except Exception as e:
+        print(f"Error al obtener los tipos de empresas: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener los tipos de empresas: {str(e)}")
+    
 
 
 @router.post("/generate-pdf")

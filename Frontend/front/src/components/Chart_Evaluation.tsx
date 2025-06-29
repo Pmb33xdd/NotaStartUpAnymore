@@ -57,8 +57,12 @@ const ChartEvaluation: React.FC<ChartEvaluationProps> = ({ data }) => {
     return (
         <div className="bg-white p-6 rounded-xl shadow-md">
             <h3 className="font-bold mb-4 text-lg text-gray-700">Gráfico</h3>
-            <div style={{ height: '400px' }}>
-                <canvas ref={chartRef}></canvas>
+            <div style={{ height: '400px' }} className="flex items-center justify-center">
+                {data.length === 0 ? (
+                    <p className="text-gray-500 text-center">No hay datos para mostrar.</p>
+                ) : (
+                    <canvas ref={chartRef}></canvas>
+                )}
             </div>
         </div>
     );

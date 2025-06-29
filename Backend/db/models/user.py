@@ -8,7 +8,7 @@ class User(BaseModel):
     name: str
     surname: str
     email: str
-    subscriptions: List[str] = Field(default_factory=list)  # Valor por defecto: lista vacía
+    subscriptions: List[str] = Field(default_factory=list)
     filters: List[str] = Field(default_factory=list)
     password: str
     is_verified: bool = False
