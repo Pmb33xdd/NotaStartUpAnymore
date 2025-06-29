@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from './auth_context'; // Asegúrate de que la ruta sea correcta
+import { useAuth } from './auth_context';
 import { API_KEY, LOGIN_URL } from '../urls';
 
 const Login: React.FC = () => {
@@ -8,7 +8,7 @@ const Login: React.FC = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
-    const { login } = useAuth(); // Accede a la función login del contexto
+    const { login } = useAuth();
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -29,16 +29,13 @@ const Login: React.FC = () => {
                 throw new Error(errorData.detail || 'Error al iniciar sesión');
             }
     
-            // Analiza la respuesta como JSON
             const data = await response.json(); 
     
             console.log('Inicio de sesión exitoso');
-            localStorage.setItem('token', data.access_token); // Accede al token desde data
+            localStorage.setItem('token', data.access_token);
 
-            // Llama a la función login del contexto con el nombre de usuario o email
             login({ username: data.username || email });
 
-            // Redirige al perfil
             navigate('/profile');
 
         } catch (error: any) {

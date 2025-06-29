@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from './auth_context'; // Importa el custom hook
+import { useAuth } from './auth_context';
 
 const Navbar: React.FC = () => {
     const { isLoggedIn, username, logout } = useAuth();

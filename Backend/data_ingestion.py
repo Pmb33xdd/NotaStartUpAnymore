@@ -19,7 +19,7 @@ load_dotenv()
 
 API_KEY = os.getenv("API_KEY_GOOGLE_NEWS")
 SMTP_SERVER = os.getenv("SMTP_SERVER")
-SMTP_PORT = os.getenv("SMTP_PORT") 
+SMTP_PORT = os.getenv("SMTP_PORT")
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 
@@ -41,7 +41,7 @@ class Ingestion():
         metadata = metadata_collection.find_one({"_id": "last_ingestion_timestamp"})
         if metadata and "timestamp" in metadata:
             try:
-                # MongoDB almacena datetime como objetos datetime de Python
+                
                 return metadata["timestamp"]
             except Exception as e:
                 print(f"Advertencia: Formato de fecha inválido en DB para last_ingestion_timestamp. {e}")
@@ -49,15 +49,12 @@ class Ingestion():
         return None
     
     def _update_last_run_date_in_db(self, news_list: list[News]):
-        """
-        Actualiza la fecha de la última ejecución en la base de datos a la fecha de la noticia más reciente
-        de la lista proporcionada.
-        """
+        """Actualiza la fecha de la última ejecución en la base de datos a la fecha de la noticia más reciente de la lista proporcionada."""
+        
         if not news_list:
             print("La lista de noticias está vacía. No se actualiza la fecha de última ejecución.")
             return
 
-        # Encontrar la fecha más reciente entre todas las noticias
         latest_news_date = None
         for news_item in news_list:
             if latest_news_date is None or news_item.date > latest_news_date:
@@ -68,7 +65,7 @@ class Ingestion():
         metadata_collection.update_one(
             {"_id": "last_ingestion_timestamp"},
             {"$set": {"timestamp": date_to_save}},
-            upsert=True  # Si el documento no existe, lo crea
+            upsert=True
         )
         print(f"Fecha de última ejecución actualizada en DB a: {date_to_save.strftime('%Y-%m-%d %H:%M:%S')}")
 
@@ -94,23 +91,49 @@ class Ingestion():
         return None
     
     def send_newsletters(self, news_list: list[News]):
+        """
+        Envía boletines de noticias a los usuarios basados en sus suscripciones
+        y, opcionalmente, en sus filtros de localización/región.
+        """
         users_cursor = db_client.users.find()
         users = users_schema(users_cursor)
 
         for user in users:
             user_subscriptions = user.get("subscriptions", [])
-            user_news = []
-
+            user_filters = user.get("filters", [])
+            
+            subscribed_news = []
             for news in news_list:
-                if news.topic in user_subscriptions:
-                    user_news.append(news)
+                if news.topic in user_subscriptions or news.company in user_subscriptions:
+                    subscribed_news.append(news)
+            
+            if not subscribed_news:
+                continue
 
-            if user_news:
-                print(f"Enviando correo a {user['email']} con {len(user_news)} noticias.")
-                cartero.send_email(user["email"], user_news, user["name"])
+            final_news_to_send = subscribed_news
+            
+            if "__APLICAR_A_BOLETINES__" in user_filters:
+                
+                location_filters = {f for f in user_filters if f != "__APLICAR_A_BOLETINES__"}
+                
+                if location_filters:
+                    filtered_news = []
+                    for news in subscribed_news:
+
+                        news_location = getattr(news, 'location', None)
+                        news_region = getattr(news, 'region', None)
+                        
+                        if (news_location and news_location in location_filters) or \
+                        (news_region and news_region in location_filters):
+                            filtered_news.append(news)
+                    
+                    final_news_to_send = filtered_news
+
+            if final_news_to_send:
+                print(f"Enviando correo a {user['email']} con {len(final_news_to_send)} noticias.")
+                cartero.send_email(user["email"], final_news_to_send, user["name"])
 
     def extract_json(self, content: str):
-        # Busca el JSON dentro de la respuesta
         match = re.search(r'({.*})', content, re.DOTALL)
         if match:
             return match.group(0)
@@ -125,15 +148,13 @@ class Ingestion():
 
             fecha_str = entry.get("published", "Fecha no disponible")
             try:
-                # Si la fecha tiene información de zona horaria:
                 if 'z' in "%a, %d %b %Y %H:%M:%S %z": 
                     published_date_aware = datetime.strptime(fecha_str, "%a, %d %b %Y %H:%M:%S %z")
                 else:
-                    # Si no tiene información de zona horaria, asumimos como UTC o la zona local del servidor
                     published_date_aware = datetime.strptime(fecha_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
             except ValueError:
                 print(f"Advertencia: No se pudo parsear la fecha '{fecha_str}' para la noticia '{entry.title}'. Saltando.")
-                continue # Salta esta noticia si la fecha no se puede parsear
+                continue
 
             # Asegurarse de que ambas fechas (last_run_date y published_date_aware) sean timezone-aware
             # y estén en el mismo timezone (preferiblemente UTC) para una comparación precisa.
@@ -148,7 +169,7 @@ class Ingestion():
 
             if last_run_date and published_date_aware <= last_run_date:
                 print(f"Noticia '{entry.title}' es antigua (fecha: {published_date_aware}). Saltando.")
-                continue # Saltar noticias que no son más recientes
+                continue
 
             print(f"Noticia {self.contador}")
             titulo = entry.title
@@ -312,7 +333,7 @@ class Ingestion():
                 published_date_aware = datetime.strptime(fecha_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
             except ValueError:
                 print(f"Advertencia: No se pudo parsear la fecha '{fecha_str}' para la noticia '{titulo}'. Saltando.")
-                continue # Salta esta noticia si la fecha no se puede parsear
+                continue
 
             # Asegurarse de que last_run_date sea timezone-aware para una comparación precisa
             if last_run_date and last_run_date.tzinfo is None:
@@ -320,7 +341,7 @@ class Ingestion():
 
             if last_run_date and published_date_aware <= last_run_date:
                 print(f"Noticia '{titulo}' es antigua (fecha: {published_date_aware}). Saltando.")
-                continue # Saltar noticias que no son más recientes
+                continue
 
 
             fecha = datetime.strptime(fecha_str, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H:%M:%S")

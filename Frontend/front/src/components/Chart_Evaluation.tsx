@@ -18,7 +18,7 @@ const ChartEvaluation: React.FC<ChartEvaluationProps> = ({ data }) => {
         if (!chartRef.current || data.length === 0) return;
 
         if (chartInstance.current) {
-            chartInstance.current.destroy(); // Destruir gráfico previo
+            chartInstance.current.destroy();
         }
 
         const ctx = chartRef.current.getContext('2d');

@@ -32,7 +32,7 @@ const DataSelection: React.FC<DataSelectionProps> = ({ onGenerate }) => {
                 console.error('Error fetching company types:', error);
             }
         };
-        fetchCompanyTypes(); // <-- importante: llamarlo
+        fetchCompanyTypes();
     }, []);
 
 
@@ -57,7 +57,6 @@ const DataSelection: React.FC<DataSelectionProps> = ({ onGenerate }) => {
             <select value={timePeriod} onChange={(e) => setTimePeriod(e.target.value)} className="w-full p-2 border rounded-md mb-2">
                 <option value="ultimoAno">Último año</option>
                 <option value="ultimoMes">Último mes</option>
-                {/* ... otras opciones */}
             </select>
             <button onClick={handleGenerate} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded cursor-pointer">
                 Generar gráfico

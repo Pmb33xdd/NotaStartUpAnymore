@@ -123,10 +123,6 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ onGenerateReport }) =
                                     <input type="checkbox" name="tipoCrecimiento" checked={reportFormData.tipoCrecimiento} onChange={handleCheckboxChange} className="mr-2" />
                                     Crecimiento superlativo
                                 </label>
-                                <label className="inline-flex items-center mb-1">
-                                    <input type="checkbox" name="tipoOtras" checked={reportFormData.tipoOtras} onChange={handleCheckboxChange} className="mr-2" />
-                                    Otras
-                                </label>
                             </div>
                         </div>
 

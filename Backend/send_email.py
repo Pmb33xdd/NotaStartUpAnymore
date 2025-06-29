@@ -45,7 +45,6 @@ class MailSender:
                 news_by_topic[topic] = []
             news_by_topic[topic].append(news)
 
-        # Construir el cuerpo del correo en formato HTML
         news_sections = ""
         for topic, news_items in news_by_topic.items():
             news_items_html = "".join([
@@ -98,7 +97,6 @@ class MailSender:
 
         msg.attach(MIMEText(html_content, "html"))
 
-        # Conectar con el servidor SMTP y enviar el correo
         try:
             with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=10) as server:
                 server.starttls()

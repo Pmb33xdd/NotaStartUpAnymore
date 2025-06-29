@@ -36,7 +36,6 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 cartero = MailSender(SMTP_SERVER, SMTP_PORT, SMTP_USER, SMTP_PASSWORD )
 escritor = ReportGenerator()
 
-# Configuración de JWT
 JWT_SECRET = os.getenv("JWT_SECRET")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -44,13 +43,11 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 router = APIRouter(
     prefix="/users",
     tags=["users"],
-    responses={status.HTTP_404_NOT_FOUND: {"message": "No encontrado"}},
+    responses={status.HTTP_404_NOT_FOUND: {"message": "No encontrado"}}
 )
 
-# Esquema de autenticación OAuth2
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# Función para crear un token de acceso JWT
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -58,7 +55,6 @@ def create_access_token(data: dict):
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=ALGORITHM)
     return encoded_jwt
 
-# Función para obtener el usuario actual (requiere autenticación)
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -85,7 +81,6 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate API key",
         )
-
 
 @router.get("/", response_model=list[User])
 async def users(api_key: str = Depends(get_api_key)):
@@ -176,7 +171,7 @@ async def verify_email(token: str):
 
 
 @router.post("/login", response_model=dict)
-async def login(login_data: LoginData, api_key: str = Depends(get_api_key)):  # Usa LoginData como tipo de parámetro
+async def login(login_data: LoginData, api_key: str = Depends(get_api_key)):
     try:
         db_user = search_user("email", login_data.email) 
         if not db_user:
@@ -208,7 +203,6 @@ async def login(login_data: LoginData, api_key: str = Depends(get_api_key)):  # 
             detail=f"Error en el servidor: {str(e)}",
         )
 
-# Endpoint para obtener los datos del usuario actual (protegido)
 @router.get("/me", response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_user), api_key: str = Depends(get_api_key)):
     return current_user
@@ -246,7 +240,6 @@ async def update_user_me(
         action = request.action
         print(f"Subscription: {subscription}")  
         
-        # Asegurar que la lista de suscripciones existe
         user_subscriptions = current_user.subscriptions if current_user.subscriptions else []
 
         if action == "add" and subscription not in user_subscriptions:
@@ -319,23 +312,21 @@ def get_chart_data(
     data = []
 
     if timePeriod == "ultimoAno":
-            # Obtener la fecha de hace un año
             one_year_ago = datetime.now() - timedelta(days=365)
-            # Truncar la hora a las 00:00:00 para solo comparar la fecha
+
             one_year_ago = one_year_ago.replace(hour=0, minute=0, second=0, microsecond=0)
-            # Convertir la fecha a formato string en el mismo formato que la base de datos
+
             date_filter = {"$gte": one_year_ago}
 
     elif timePeriod == "ultimoMes":
-            # Obtener la fecha de hace un mes
+
             one_month_ago = datetime.now() - timedelta(days=30)
-            # Truncar la hora a las 00:00:00
+
             one_month_ago = one_month_ago.replace(hour=0, minute=0, second=0, microsecond=0)
-            # Convertir la fecha a formato string
+
             date_filter = {"$gte": one_month_ago}
 
     else:
-        # Si no es "ultimoAno" ni "ultimoMes", no filtramos por fecha
         date_filter = {}
     if dataType == "empresasCreadas":
         data = generar_datos_chart("Creación de una nueva empresa", companyType, date_filter)
@@ -355,33 +346,28 @@ def get_chart_data(
 def search_user(field: str, key):
     try:
         user_data = db_client.users.find_one({field: key})
-        if user_data:  # Verifica si se encontró un usuario
+        if user_data:
             user = user_schema(user_data)
             return User(**user)
-        return None  # Retorna None si no se encuentra el usuario
+        return None
     except Exception as e:
-        print(f"Error en search_user: {e}") # Imprime el error para debuggear
-        return None  # También retorna None en caso de error
+        print(f"Error en search_user: {e}")
+        return None 
     
 def generar_datos_chart(type: str, companyType: str, date_filter):
         news_list = list(db_client.news.find({"topic": type, "date": date_filter}))
 
-        # Extraer las empresas de las noticias
         companies = {news["company"] for news in news_list}
         print(f"{companies}")
 
-        # Buscar las empresas en la base de datos
         companies_list = list(db_client.companies.find({"name": {"$in": list(companies)}}))
         print(f"{companies_list}")
 
-        # Contar la cantidad de empresas por tipo
         type_counts = Counter(company["type"] for company in companies_list)
 
-        # Filtrar por tipo de empresa si es necesario
         if companyType != "todos":
             type_counts = {k: v for k, v in type_counts.items() if k == companyType}
      
-        # Crear la respuesta
         data = [{"label": tipo, "value": cantidad} for tipo, cantidad in type_counts.items()]
 
         return data

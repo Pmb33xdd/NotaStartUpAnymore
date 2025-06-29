@@ -36,6 +36,7 @@ const Profile: React.FC = () => {
     const [chartData, setChartData] = useState<DataChart[]>([]);
     const [FiltersOptions, setFiltersOptions] = useState<string[]>([]);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+    const [applyToBulletins, setApplyToBulletins] = useState(false);
 
     const navigate = useNavigate();
 
@@ -106,12 +107,28 @@ const Profile: React.FC = () => {
         }
     };
 
-    const handleFilterChange = async (filter: string) => {
-        setSelectedFilters(prev => {
-            const updatedFilters = prev.includes(filter) ? prev.filter(s => s !== filter) : [...prev, filter];
-            updateUserFilters(updatedFilters);
-            return updatedFilters;
-        });
+    const handleFilterOptionChange = async (filter: string, isBulletinToggle = false) => {
+        if (isBulletinToggle) {
+            setApplyToBulletins(prev => {
+                const updated = !prev;
+                const updatedFilters = updated
+                    ? [...selectedFilters, '__APLICAR_A_BOLETINES__']
+                    : selectedFilters.filter(f => f !== '__APLICAR_A_BOLETINES__');
+
+                setSelectedFilters(updatedFilters);
+                updateUserFilters(updatedFilters);
+                return updated;
+            });
+        } else {
+            setSelectedFilters(prev => {
+                const updatedFilters = prev.includes(filter)
+                    ? prev.filter(f => f !== filter)
+                    : [...prev, filter];
+
+                updateUserFilters(updatedFilters);
+                return updatedFilters;
+            });
+        }
     };
 
     const updateUserFilters = async (filters: string[]) => {
@@ -121,6 +138,7 @@ const Profile: React.FC = () => {
                 navigate('/login');
                 return;
             }
+
             const response = await fetch(FILTROS_URL, {
                 method: 'PUT',
                 headers: {
@@ -128,12 +146,14 @@ const Profile: React.FC = () => {
                     'Authorization': `Bearer ${token}`,
                     'access_token': API_KEY,
                 },
-                body: JSON.stringify({ filters }),
+                body: JSON.stringify({ filters: filters }),
             });
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.detail || 'Error al actualizar los filtros');
             }
+
             setUserData(prevUserData => ({
                 ...(prevUserData as UserItem),
                 filters: filters,
@@ -142,6 +162,7 @@ const Profile: React.FC = () => {
             console.error('Error al actualizar los filtros:', error);
         }
     };
+
 
     const handleGenerateChart = async (params: Record<string, string>) => {
         try {
@@ -226,7 +247,6 @@ const Profile: React.FC = () => {
                 throw new Error(errorData.detail || 'Error al generar el informe');
             }
 
-            // Aquí puedes manejar la descarga del PDF o la respuesta del backend
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -252,6 +272,7 @@ const Profile: React.FC = () => {
                     navigate('/login');
                     return;
                 }
+
                 const response = await fetch(DATOS_DE_USUARIO_URL, {
                     method: 'GET',
                     headers: {
@@ -260,22 +281,30 @@ const Profile: React.FC = () => {
                         'access_token': API_KEY,
                     },
                 });
+
                 if (!response.ok) {
                     localStorage.removeItem('token');
                     navigate('/login');
                     return;
                 }
+
                 const userData: UserItem = await response.json();
-                setUserData(userData);
-                if (userData && userData.filters) {
-                    setSelectedFilters(userData.filters);
+                const userFilters = userData?.filters || [];
+
+                if (userFilters.includes('__APLICAR_A_BOLETINES__')) {
+                    setApplyToBulletins(true);
                 }
+
+                setSelectedFilters(userFilters);
+                setUserData(userData);
+
             } catch (error) {
                 console.error('Error al obtener los datos del usuario:', error);
                 localStorage.removeItem('token');
                 navigate('/login');
             }
         };
+
 
         const fetchNews = async () => {
             try {
@@ -473,7 +502,7 @@ const Profile: React.FC = () => {
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedFilters.includes(filter)}
-                                                    onChange={() => handleFilterChange(filter)}
+                                                    onChange={() => handleFilterOptionChange(filter, false)}
                                                     className="mr-2"
                                                 />
                                                 {filter}
@@ -482,16 +511,31 @@ const Profile: React.FC = () => {
                                     </div>
                                 </div>
                             )}
-                            {selectedFilters.length > 0 && (
-                                <div className="mt-4">
-                                    <p className="font-semibold">Filtros seleccionados:</p>
+
+                            <div className="mt-4">
+                                <p className="font-semibold">Filtros seleccionados:</p>
                                     <ul className="list-disc pl-5">
-                                        {selectedFilters.map((filter) => (
-                                            <li key={filter} className="text-sm">{filter}</li>
-                                        ))}
+                                        {selectedFilters.filter(f => f !== '__APLICAR_A_BOLETINES__').length > 0 ? (
+                                            selectedFilters.filter(f => f !== '__APLICAR_A_BOLETINES__').map((filter) => (
+                                                <li key={filter} className="text-sm">{filter}</li>
+                                            ))
+                                        ) : (
+                                            <li className="text-sm">No hay filtros seleccionados.</li>
+                                        )}
                                     </ul>
+                                <div className="mt-4">
+                                    <label className="flex items-center space-x-2 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            checked={applyToBulletins}
+                                            onChange={() => handleFilterOptionChange('__APLICAR_A_BOLETINES__', true)}
+                                        />
+                                        <span>Aplicar estos filtros a mis boletines</span>
+                                    </label>
                                 </div>
-                            )}
+
+                                
+                            </div>
                         </div>
                     </div>
 
