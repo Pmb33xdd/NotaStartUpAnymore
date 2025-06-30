@@ -25,8 +25,7 @@ class MailSender:
         if not news_list:
             print(f"No hay noticias para enviar a {user_email}.")
             return
-        
-        # Validar correo electrónico básico
+
         if not self._is_valid_email(user_email):
             print(f"Correo inválido: {user_email}")
             return
@@ -37,7 +36,7 @@ class MailSender:
         msg["To"] = user_email
         msg["Subject"] = "📢 Boletín de Noticias Empresariales - NotaStartupAnymore"
 
-        # Agrupar noticias por tema
+
         news_by_topic = {}
         for news in news_list:
             topic = news.topic if news.topic != "ninguno" else "Otros"

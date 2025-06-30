@@ -123,8 +123,7 @@ class Ingestion():
                         news_location = getattr(news, 'location', None)
                         news_region = getattr(news, 'region', None)
                         
-                        if (news_location and news_location in location_filters) or \
-                        (news_region and news_region in location_filters):
+                        if (news_location and news_location in location_filters) or (news_region and news_region in location_filters):
                             filtered_news.append(news)
                     
                     final_news_to_send = filtered_news
@@ -261,7 +260,6 @@ class Ingestion():
             response = requests.get(url, headers=headers)
             soup = BeautifulSoup(response.text, "html.parser")
 
-            # Extraer contenido basado en etiquetas comunes en noticias
             paragraphs = soup.find_all("p")
             content = " ".join([p.get_text() for p in paragraphs])
             if len(content) > 1000:  # Limitamos a 1000 caracteres ya que de otra forma al ser un prompt demasiado grande tendremos un error de RAM
@@ -390,7 +388,7 @@ class Ingestion():
                     nuevo_tema = "ninguno"
                     
                     if tema != "ninguno":
-                        nuevo_tema, resumen, nuevo_tipo_empresa, nuevo_nombre_empresa = self.scrape_article(noticia_url, titulo, tema)  # 🔍 Scraping
+                        nuevo_tema, resumen, nuevo_tipo_empresa, nuevo_nombre_empresa = self.scrape_article(noticia_url, titulo, tema)
                         if (nuevo_tema != "ninguno"):
                             noticia = News(
                                 company=nuevo_nombre_empresa,
@@ -471,7 +469,6 @@ class Ingestion():
                 es_dup, razon = self.es_noticia_duplicada_ia(noticia, existente)
                 if es_dup:
                     print(f"Noticia duplicada detectada: {razon}")
-                    # Combinar URLs si no están ya
                     urls = set(existente.url.split(" || ")) | set([noticia.url])
                     existente.url = " || ".join(urls)
                     duplicada = True

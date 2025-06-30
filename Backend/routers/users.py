@@ -162,7 +162,6 @@ async def verify_email(token: str):
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-        # Marcar como verificado
         db_client.users.update_one({"email": email}, {"$set": {"is_verified": True}})
         return {"message": "Correo verificado con éxito"}
 
@@ -192,7 +191,6 @@ async def login(login_data: LoginData, api_key: str = Depends(get_api_key)):
                 detail="Debes verificar tu correo antes de iniciar sesión"
             )
         
-        # Crea el token JWT
         access_token = create_access_token(data={"sub": db_user.email})
         return {"access_token": access_token, "token_type": "bearer"}
     except HTTPException as e:

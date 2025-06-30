@@ -53,7 +53,6 @@ class ReportGenerator:
         print(start_date)
         print(end_date)
 
-        # Convertimos start_date y end_date en datetime con hora y en UTC
         start_datetime_utc = datetime.combine(start_date, time.min)
         end_datetime_utc = datetime.combine(end_date, time.max)
 
@@ -124,7 +123,6 @@ class ReportGenerator:
         if selected_types:
             news_list = await self.fetch_filtered_news(form_data.fechaInicio, form_data.fechaFin, selected_types)
             if news_list:
-                # Agrupar noticias por tipo
                 grouped_news = defaultdict(list)
                 for news in news_list:
                     grouped_news[news.get("topic", "Otro")].append(news)
@@ -134,7 +132,6 @@ class ReportGenerator:
                 for topic in selected_types:
                     noticias_tipo = grouped_news.get(topic, [])
                     if noticias_tipo:
-                        # Ordenar por fecha descendente
                         noticias_tipo.sort(key=lambda n: n.get("date", datetime.min), reverse=True)
                         html_content += f"<h3>{topic}</h3><ul>"
                         for news in noticias_tipo:
@@ -149,7 +146,7 @@ class ReportGenerator:
                             html_content += (
                                 f'<li class="news-item">{news.get("title", "Sin título")} '
                                 f'({formatted_date}) - Empresa: {news.get("company", "Desconocida")} '
-                                f'- URL de la noticia: {news.get("url", "URL no disponible")}</li>'
+                                f'- <strong>URL:</strong> <a href="{news.get("url", "#")}" target="_blank" style="color:#0077cc; text-decoration:underline;">{news.get("url", "URL no disponible")}</a></li>'
                             )
                         html_content += "</ul>"
             else:
