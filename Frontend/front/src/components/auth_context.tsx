@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<{ children?: React.ReactNode }> = ({ childre
         };
 
         checkAuth();
-    }, [navigate]);
+    }, [username]);
 
     const login = (userData: { username: string }) => {
         setIsLoggedIn(true);
@@ -86,6 +86,6 @@ export const AuthProvider: React.FC<{ children?: React.ReactNode }> = ({ childre
     );
 };
 
-export const useAuth = () => useContext(AuthContext); // Custom hook para acceder al contexto
+export const useAuth = () => useContext(AuthContext);
 
 export default AuthContext;

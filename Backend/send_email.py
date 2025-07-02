@@ -6,7 +6,6 @@ from typing import List
 from db.models.news import News
 
 class MailSender:
-    """Clase para manejar el envío de correos electrónicos."""
     
     def __init__(self, smtp_server: str, smtp_port: int, smtp_user: str, smtp_password: str):
         self.smtp_server = smtp_server
@@ -15,13 +14,7 @@ class MailSender:
         self.smtp_password = smtp_password
     
     def send_email(self, user_email: str, news_list: List[News], user_name: str = "Usuario"):
-        """Envía un boletín de noticias empresariales al usuario en formato HTML estilizado.
 
-        Args:
-            user_email (str): Dirección de correo del destinatario.
-            news_list (List[News]): Lista de noticias a incluir en el boletín.
-            user_name (str, optional): Nombre del usuario para personalización. Por defecto, "Usuario".
-        """
         if not news_list:
             print(f"No hay noticias para enviar a {user_email}.")
             return
@@ -30,7 +23,6 @@ class MailSender:
             print(f"Correo inválido: {user_email}")
             return
 
-        # Crear el mensaje de correo
         msg = MIMEMultipart()
         msg["From"] = self.smtp_user
         msg["To"] = user_email
@@ -108,13 +100,13 @@ class MailSender:
             print(f"Error inesperado al enviar correo a {user_email}: {e}")
 
     def _is_valid_email(self, email: str) -> bool:
-        """Valida si una dirección de correo es válida (formato básico)."""
+
         import re
         pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         return bool(re.match(pattern, email))
 
     def contact_email(self, user_email: str, name: str, mail_in_form: str, message: str):
-        """Envía un correo de contacto desde el formulario."""
+
         msg = MIMEText(f"Nombre: {escape(name)}\nEmail: {escape(mail_in_form)}\nMensaje: {escape(message)}")
         msg["From"] = self.smtp_user
         msg["To"] = user_email
@@ -132,7 +124,7 @@ class MailSender:
             print(f"Error inesperado al enviar correo a {user_email}: {e}")
 
     def send_verification_email(self, user_email: str, name: str, verification_url: str):
-        """Envía un correo de verificación de cuenta."""
+
         msg = MIMEMultipart()
         msg["From"] = self.smtp_user
         msg["To"] = user_email
@@ -165,6 +157,7 @@ class MailSender:
         </body>
         </html>
         """
+        
         msg.attach(MIMEText(html_content, "html"))
 
         try:

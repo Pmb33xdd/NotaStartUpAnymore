@@ -1,5 +1,3 @@
-import os
-import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware 
 from routers import  users
@@ -25,13 +23,8 @@ app.add_middleware(
 
 app.include_router(users.router)
 
-# Static
-#app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 async def root():
-    return "Hola FastAPI"
+    return "Hola NotAStartUpAnymore"
 
-@app.get("/url")
-async def url():
-    return { "url_curso":"https://mouredev.com/python" }

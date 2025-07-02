@@ -36,7 +36,6 @@ class Ingestion():
         self.contador = contador
 
     def _get_last_run_date_from_db(self) -> Optional[datetime]:
-        """Lee la última fecha de ejecución desde la base de datos."""
 
         metadata = metadata_collection.find_one({"_id": "last_ingestion_timestamp"})
         if metadata and "timestamp" in metadata:
@@ -49,7 +48,6 @@ class Ingestion():
         return None
     
     def _update_last_run_date_in_db(self, news_list: list[News]):
-        """Actualiza la fecha de la última ejecución en la base de datos a la fecha de la noticia más reciente de la lista proporcionada."""
         
         if not news_list:
             print("La lista de noticias está vacía. No se actualiza la fecha de última ejecución.")
@@ -71,7 +69,6 @@ class Ingestion():
 
     def change_source_and_reset(self, url_nueva):
         self.feed = feedparser.parse(url_nueva)
-        self.lista_noticias = []
         self.contador = 0
 
     def insert_db_news(self, noticia: News):
@@ -91,10 +88,6 @@ class Ingestion():
         return None
     
     def send_newsletters(self, news_list: list[News]):
-        """
-        Envía boletines de noticias a los usuarios basados en sus suscripciones
-        y, opcionalmente, en sus filtros de localización/región.
-        """
         users_cursor = db_client.users.find()
         users = users_schema(users_cursor)
 
@@ -143,7 +136,7 @@ class Ingestion():
         last_run_date = self._get_last_run_date_from_db()
         print(f"Última fecha de ejecución (RSS): {last_run_date}")
 
-        for entry in self.feed.entries[:10]:
+        for entry in self.feed.entries:
 
             fecha_str = entry.get("published", "Fecha no disponible")
             try:
@@ -155,14 +148,10 @@ class Ingestion():
                 print(f"Advertencia: No se pudo parsear la fecha '{fecha_str}' para la noticia '{entry.title}'. Saltando.")
                 continue
 
-            # Asegurarse de que ambas fechas (last_run_date y published_date_aware) sean timezone-aware
-            # y estén en el mismo timezone (preferiblemente UTC) para una comparación precisa.
             if last_run_date and last_run_date.tzinfo is None:
-                # Si last_run_date no tiene info de timezone, asumimos como UTC
                 last_run_date = last_run_date.replace(tzinfo=timezone.utc)
             
             if published_date_aware and published_date_aware.tzinfo is None:
-                 # Si la fecha de la noticia no tiene info de timezone, asumimos como UTC
                 published_date_aware = published_date_aware.replace(tzinfo=timezone.utc)
 
 
@@ -177,7 +166,7 @@ class Ingestion():
             descripcion = entry.description
             fecha = entry.get("published", "Fecha no disponible")
             fecha = datetime.strptime(fecha, "%a, %d %b %Y %H:%M:%S %z").strftime("%Y-%m-%d %H:%M:%S")
-            url = entry.get("guid", "url no disponible")
+            noticia_url = entry.get("guid", "url no disponible")
             print(descripcion)
             print("\n")
             response: ChatResponse = chat(model='deepseek-coder-v2:16b', messages=[
@@ -222,27 +211,28 @@ class Ingestion():
                     reg = json_response.get("region", "Desconocido")
 
                     if tema != "ninguno":
-                        existing_company = self.search_company(company_name)
-                        if not existing_company and (company_name != "Desconocida" and company_name != "ninguna"):
-                            new_company = Company(name=company_name, type=company_type, details="Desconocidos")
-                            self.insert_db_company(new_company)
-                            print(f"Compañía '{company_name}' insertada en la base de datos.")
+                        nuevo_tema, resumen, nuevo_tipo_empresa, nuevo_nombre_empresa = self.scrape_article(noticia_url, titulo, tema)
+                        if (nuevo_tema != "ninguno"):
 
-                        noticia = News(
-                            company=company_name,
-                            title=titulo,
-                            topic=tema,
-                            date = fecha,
-                            location = loc,
-                            region= reg,
-                            url = url,
-                            details=json_response.get("detalles", "Ninguno")
-                        )
-                        self.insert_db_news(noticia)
-                        print(f"Noticia '{titulo}' insertada en la base de datos.")
-                        self.lista_noticias.append(noticia)
-                    else:
-                        print(f"Noticia '{titulo}' no relacionada con los temas especificados. No se insertará en la base de datos.")
+                            noticia = News(
+                                company=nuevo_nombre_empresa,
+                                title=titulo,
+                                topic=nuevo_tema,
+                                date=fecha,
+                                location= loc,
+                                region=reg,
+                                url = noticia_url,
+                                details=resumen or json_response.get("detalles", "Ninguno")
+                            )
+
+                            self.lista_noticias.append(noticia)
+                            existing_company = self.search_company(nuevo_nombre_empresa)
+
+                            if not existing_company and (nuevo_nombre_empresa != "Desconocida" and nuevo_nombre_empresa != "ninguna" and nuevo_tema !="ninguno"):
+                                new_company = Company(name=nuevo_nombre_empresa, type=nuevo_tipo_empresa, details="Desconocidos")
+                                self.insert_db_company(new_company)
+                                print(f"Compañía '{nuevo_nombre_empresa}' insertada en la base de datos. \n")
+
                 else:
                     print(f"No se encontró un JSON válido en la respuesta de la IA.")
             except json.JSONDecodeError as e:
@@ -254,7 +244,6 @@ class Ingestion():
 
     
     def scrape_article(self, url, title, tema):
-        """Extrae información de la noticia desde la URL usando web scraping."""
         try:
             headers = {"User-Agent": "Mozilla/5.0"}
             response = requests.get(url, headers=headers)
@@ -262,7 +251,7 @@ class Ingestion():
 
             paragraphs = soup.find_all("p")
             content = " ".join([p.get_text() for p in paragraphs])
-            if len(content) > 1000:  # Limitamos a 1000 caracteres ya que de otra forma al ser un prompt demasiado grande tendremos un error de RAM
+            if len(content) > 1000:
                 content = content[:1000] + "..."
             
             if not content.strip():
@@ -312,9 +301,9 @@ class Ingestion():
             return "ninguno", "Error de scraping", "Desconocido", "Desconocida"
     
         
-    def data_ingestion_google_news(self, query):
+    def data_ingestion_newsAPI(self, query):
         last_run_date = self._get_last_run_date_from_db()
-        print(f"Última fecha de ejecución (Google News): {last_run_date}")
+        print(f"Última fecha de ejecución (newsAPI): {last_run_date}")
 
         url = f"https://newsapi.org/v2/everything?q={query}&apiKey={API_KEY}"
         response = requests.get(url)
@@ -327,13 +316,11 @@ class Ingestion():
             fecha_str = article["publishedAt"]
 
             try:
-                # Convertir la fecha de Google News (que es ISO 8601 y ya es timezone-aware)
                 published_date_aware = datetime.strptime(fecha_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
             except ValueError:
                 print(f"Advertencia: No se pudo parsear la fecha '{fecha_str}' para la noticia '{titulo}'. Saltando.")
                 continue
 
-            # Asegurarse de que last_run_date sea timezone-aware para una comparación precisa
             if last_run_date and last_run_date.tzinfo is None:
                 last_run_date = last_run_date.replace(tzinfo=timezone.utc)
 
@@ -400,8 +387,7 @@ class Ingestion():
                                 url = noticia_url,
                                 details=resumen or json_response.get("detalles", "Ninguno")
                             )
-#                            self.insert_db_news(noticia)
-#                            print(f"Noticia '{titulo}' insertada en la base de datos. \n")
+
                             self.lista_noticias.append(noticia)
                             existing_company = self.search_company(nuevo_nombre_empresa)
 
@@ -412,14 +398,6 @@ class Ingestion():
 
             except json.JSONDecodeError as e:
                 print(f"Error procesando noticia '{titulo}': {e}")
-
-#        print("\n Vamos a filtrar las noticias para asegurarnos de que no haya duplicados \n")
-#
-#        self.lista_noticias = self.filtrar_noticias_repetidas(self.lista_noticias)
-#
-#        for noticia in self.lista_noticias:
-#            self.insert_db_news(noticia)
-#            print(f"Insertada noticia {noticia.title} en la base de datos")
 
 
     def es_noticia_duplicada_ia(self, nueva_noticia, noticia_existente):

@@ -17,7 +17,6 @@ interface ReportFormData {
     tipoCreacion: boolean;
     tipoCambioSede: boolean;
     tipoCrecimiento: boolean;
-    tipoOtras: boolean;
     incluirGraficos: boolean;
     mail: string;
     message: string;
@@ -369,7 +368,7 @@ const Profile: React.FC = () => {
         fetchNews();
         fetchUserData();
         fetchFilters();
-    }, [navigate]);
+    }, []);
 
     const toggleDropdown = () => {
         setIsDropdownOpen(!isDropdownOpen);
@@ -393,179 +392,248 @@ const Profile: React.FC = () => {
 
     const filteredCompanies = selectedCompanyType ? companies.filter(company => company.type === selectedCompanyType) : companies;
 
-    return (
-        <div className="flex flex-col h-screen bg-gray-100">
-            <header className="bg-white shadow-lg p-4 flex justify-between items-center">
-                <div className="relative">
-                    <button onClick={toggleDropdown} className="flex items-center gap-2 cursor-pointer text-gray-800 font-semibold hover:text-blue-600 transition-all duration-300">
-                        <span className="material-symbols-outlined">Usuario: </span>
-                        <span className="font-bold">{userData?.username}</span>
+return (
+  <div className="flex flex-col h-screen bg-gray-100">
+    <header className="bg-white shadow-lg p-4 flex justify-between items-center">
+      <div className="relative">
+        <button
+          onClick={toggleDropdown}
+          className="flex items-center gap-2 cursor-pointer text-gray-800 font-semibold hover:text-blue-600 transition-all duration-300"
+        >
+          <span className="material-symbols-outlined">Usuario: </span>
+          <span className="font-bold">{userData?.username}</span>
+        </button>
+        {isDropdownOpen && (
+          <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+            <button
+              onClick={toggleSettingsModal}
+              className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+            >
+              Ajustes
+            </button>
+          </div>
+        )}
+      </div>
+    </header>
+
+    <div className="flex-grow p-8 bg-gray-200">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+        <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg relative">
+          <h3 className="font-bold mb-4 text-lg text-gray-700">Mis suscripciones</h3>
+
+          <div className="bg-white p-4 rounded-md shadow-md max-h-64 h-64 overflow-y-auto relative pb-12">
+            {userData && userData.subscriptions && userData.subscriptions.length > 0 ? (
+              <ul className="list-disc pl-5">
+                {userData.subscriptions.map((subscription) => (
+                  <li
+                    key={subscription}
+                    className="flex justify-between items-center py-1"
+                  >
+                    <span className="text-gray-800">{subscription}</span>
+                    <button
+                      onClick={() => handleSubscriptionRemove(subscription)}
+                      className="ml-2 text-red-500 hover:text-red-700 transition-all cursor-pointer"
+                    >
+                      x
                     </button>
-                    {isDropdownOpen && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg left-8 z-10">
-                            <button onClick={toggleSettingsModal} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Ajustes</button>
-                            <a href="#" className="block px-4 py-2 text-sm hover:bg-gray-100">Mi perfil</a>
-                        </div>
-                    )}
-                </div>
-            </header>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-600">No tienes suscripciones.</p>
+            )}
 
-            <div className="flex-grow p-8 bg-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-                    <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
-                        <h3 className="font-bold mb-4 text-lg text-gray-700">Mis suscripciones</h3>
-                        <div className="bg-white p-4 rounded-md shadow-md max-h-64 h-64 overflow-y-auto relative">
-                            {userData && userData.subscriptions && userData.subscriptions.length > 0 ? (
-                                <ul className="list-disc pl-5">
-                                    {userData.subscriptions.map((subscription) => (
-                                        <li key={subscription} className="flex justify-between items-center py-1">
-                                            <span className="text-gray-800">{subscription}</span>
-                                            <button onClick={() => handleSubscriptionRemove(subscription)} className="ml-2 text-red-500 hover:text-red-700 transition-all cursor-pointer">
-                                                x
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className="text-gray-600">No tienes suscripciones.</p>
-                            )}
-                            <button
-                                className="bg-blue-100 hover:bg-blue-200 text-white rounded-full h-8 w-8 flex items-center justify-center absolute bottom-2 right-2 transition-all transform hover:scale-110 cursor-pointer"
-                                onClick={toggleSubscriptionOptions}
-                            >
-                                <span className="text-xl text-gray-600">+</span>
-                            </button>
-                            {showSubscriptionOptions && (
-                                <div className="absolute bottom-10 right-0 bg-white rounded-md shadow-lg w-64 max-h-48 overflow-y-auto transition-all">
-                                    <select
-                                        className="w-full p-2 border-b text-sm"
-                                        value={selectedCompanyType || ""}
-                                        onChange={(e) => setSelectedCompanyType(e.target.value || null)}
-                                    >
-                                        <option value=""> Todos los tipos </option>
-                                        {companyTypes.map((type) => (
-                                            <option key={type} value={type}>{type}</option>
-                                        ))}
-                                    </select>
-                                    {!selectedCompanyType && (
-                                        <>
-                                            <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick('Creación de una nueva empresa')}>Creación de una nueva empresa</a>
-                                            <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick('Contratación abundante de empleados por parte de una empresa')}>Contratación abundante de empleados por parte de una empresa</a>
-                                            <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick('Cambio de sede de una empresa')}>Cambio de sede de una empresa</a>
-                                        </>
-                                    )}
-                                    {filteredCompanies.map((company) => (
-                                        <a key={company.id} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSubscriptionClick(company.name)}>
-                                            {company.name}
-                                        </a>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
+            {showSubscriptionOptions && (
+              <div className="absolute bottom-10 right-0 bg-white rounded-md shadow-lg w-64 max-h-48 overflow-y-auto transition-all">
+                <select
+                  className="w-full p-2 border-b text-sm"
+                  value={selectedCompanyType || ""}
+                  onChange={(e) =>
+                    setSelectedCompanyType(e.target.value || null)
+                  }
+                >
+                  <option value=""> Todos los tipos </option>
+                  {companyTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+                {!selectedCompanyType && (
+                  <>
+                    <a
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                      onClick={() =>
+                        handleSubscriptionClick(
+                          "Creación de una nueva empresa"
+                        )
+                      }
+                    >
+                      Creación de una nueva empresa
+                    </a>
+                    <a
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                      onClick={() =>
+                        handleSubscriptionClick(
+                          "Contratación abundante de empleados por parte de una empresa"
+                        )
+                      }
+                    >
+                      Contratación abundante de empleados por parte de una empresa
+                    </a>
+                    <a
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                      onClick={() =>
+                        handleSubscriptionClick("Cambio de sede de una empresa")
+                      }
+                    >
+                      Cambio de sede de una empresa
+                    </a>
+                  </>
+                )}
+                {filteredCompanies.map((company) => (
+                  <a
+                    key={company.id}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => handleSubscriptionClick(company.name)}
+                  >
+                    {company.name}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
 
-                    <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
-                        <h3 className="font-bold mb-4 text-lg text-gray-700">Noticias relacionadas con mis suscripciones</h3>
-                        <div className="max-h-64 overflow-y-auto">
-                            {(() => {
-                                const filteredNews = news.filter(item => userData?.subscriptions.includes(item.topic) || userData?.subscriptions.includes(item.company));
-                                return filteredNews.length > 0 ? (
-                                    <ul className="list-disc pl-5">
-                                        {filteredNews.map((newsItem) => (
-                                            <li key={newsItem.id} className="pb-2">
-                                                <div>
-                                                    <p className="font-semibold">{newsItem.title}</p>
-                                                    <p className="text-gray-600 text-sm">Empresa: {newsItem.company}</p>
-                                                    <p className="text-gray-600 text-sm">Detalles: {newsItem.details}</p>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <p className="text-gray-600">No hay noticias de interés.</p>
-                                );
-                            })()}
-                        </div>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
-                        <h3 className="font-bold mb-4 text-lg text-gray-700">Filtros para mis noticias</h3>
-                        <button onClick={toggleFiltersOptions} className="bg-blue-400 hover:bg-blue-500 text-white rounded-md px-4 py-2 w-full text-left transition-all cursor-pointer">
-                            {showFiltersOptions ? "Cerrar Filtros" : "Seleccionar Filtros"}
-                        </button>
-                        <div className="bg-white p-4 rounded-md shadow-md max-h-64 h-64 overflow-y-auto relative">
-                            {showFiltersOptions && (
-                                <div className="relative mt-2 w-full">
-                                    <div className="bg-white border rounded-md shadow-lg w-full max-h-48 overflow-y-auto z-10">
-                                        {FiltersOptions.map((filter) => (
-                                            <label key={filter} className="flex items-center px-2 py-1 cursor-pointer hover:bg-gray-100">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedFilters.includes(filter)}
-                                                    onChange={() => handleFilterOptionChange(filter, false)}
-                                                    className="mr-2"
-                                                />
-                                                {filter}
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="mt-4">
-                                <p className="font-semibold">Filtros seleccionados:</p>
-                                    <ul className="list-disc pl-5">
-                                        {selectedFilters.filter(f => f !== '__APLICAR_A_BOLETINES__').length > 0 ? (
-                                            selectedFilters.filter(f => f !== '__APLICAR_A_BOLETINES__').map((filter) => (
-                                                <li key={filter} className="text-sm">{filter}</li>
-                                            ))
-                                        ) : (
-                                            <li className="text-sm">No hay filtros seleccionados.</li>
-                                        )}
-                                    </ul>
-                                <div className="mt-4">
-                                    <label className="flex items-center space-x-2 text-sm">
-                                        <input
-                                            type="checkbox"
-                                            checked={applyToBulletins}
-                                            onChange={() => handleFilterOptionChange('__APLICAR_A_BOLETINES__', true)}
-                                        />
-                                        <span>Aplicar estos filtros a mis boletines</span>
-                                    </label>
-                                </div>
-
-                                
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg mt-10">
-                        <ReportGenerator onGenerateReport={handleGenerateReportPDF}/>
-                    </div>
-
-                <div className="mt-8">
-                    <DataSelection onGenerate={handleGenerateChart} />
-                    {chartData && <ChartEvaluation data={chartData} />}
-                </div>
-
-            </div>
-
-            <SettingsModal
-                isOpen={isSettingsModalOpen}
-                onClose={toggleSettingsModal}
-                onDeleteAccount={handleDeleteAccount}
-                onModifyUserData={handleModifyUserData}
-            />
-
-                        
-            <footer className="w-full">
-                <img src="/images/Logo_Nombre_Proyecto.png" alt="Footer completo" className="w-full h-screen bg-purple-100 object-cover"/>
-            </footer>
-
+            <button
+              className="bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full h-8 w-8 flex items-center justify-center absolute bottom-2 right-2 transition-all transform hover:scale-110 cursor-pointer"
+              onClick={toggleSubscriptionOptions}
+            >
+              <span className="text-xl">+</span>
+            </button>
         </div>
-    );
+
+        <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
+          <h3 className="font-bold mb-4 text-lg text-gray-700">
+            Noticias relacionadas con mis suscripciones
+          </h3>
+          <div className="max-h-64 overflow-y-auto">
+            {(() => {
+              const filteredNews = news.filter(
+                (item) =>
+                  userData?.subscriptions.includes(item.topic) ||
+                  userData?.subscriptions.includes(item.company)
+              );
+              return filteredNews.length > 0 ? (
+                <ul className="list-disc pl-5">
+                  {filteredNews.map((newsItem) => (
+                    <li key={newsItem.id} className="pb-2">
+                      <div>
+                        <p className="font-semibold">{newsItem.title}</p>
+                        <p className="text-gray-600 text-sm">
+                          Empresa: {newsItem.company}
+                        </p>
+                        <p className="text-gray-600 text-sm">
+                          Detalles: {newsItem.details}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-600">No hay noticias de interés.</p>
+              );
+            })()}
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg">
+          <h3 className="font-bold mb-4 text-lg text-gray-700">Filtros para mis noticias</h3>
+          <button
+            onClick={toggleFiltersOptions}
+            className="bg-blue-400 hover:bg-blue-500 text-white rounded-md px-4 py-2 w-full text-left transition-all cursor-pointer"
+          >
+            {showFiltersOptions ? "Cerrar Filtros" : "Seleccionar Filtros"}
+          </button>
+          <div className="bg-white p-4 rounded-md shadow-md max-h-64 h-64 overflow-y-auto relative">
+            {showFiltersOptions && (
+              <div className="relative mt-2 w-full">
+                <div className="bg-white border rounded-md shadow-lg w-full max-h-48 overflow-y-auto z-10">
+                  {FiltersOptions.map((filter) => (
+                    <label
+                      key={filter}
+                      className="flex items-center px-2 py-1 cursor-pointer hover:bg-gray-100"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedFilters.includes(filter)}
+                        onChange={() => handleFilterOptionChange(filter, false)}
+                        className="mr-2"
+                      />
+                      {filter}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-4">
+              <p className="font-semibold">Filtros seleccionados:</p>
+              <ul className="list-disc pl-5">
+                {selectedFilters.filter((f) => f !== '__APLICAR_A_BOLETINES__').length > 0 ? (
+                  selectedFilters
+                    .filter((f) => f !== '__APLICAR_A_BOLETINES__')
+                    .map((filter) => (
+                      <li key={filter} className="text-sm">
+                        {filter}
+                      </li>
+                    ))
+                ) : (
+                  <li className="text-sm">No hay filtros seleccionados.</li>
+                )}
+              </ul>
+              <div className="mt-4">
+                <label className="flex items-center space-x-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={applyToBulletins}
+                    onChange={() => handleFilterOptionChange('__APLICAR_A_BOLETINES__', true)}
+                  />
+                  <span>Aplicar estos filtros a mis boletines</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-xl shadow-md transition-all hover:shadow-lg mt-10">
+        <ReportGenerator onGenerateReport={handleGenerateReportPDF} />
+      </div>
+
+      <div className="mt-8">
+        <DataSelection onGenerate={handleGenerateChart} />
+        {chartData && <ChartEvaluation data={chartData} />}
+      </div>
+    </div>
+
+    <SettingsModal
+      isOpen={isSettingsModalOpen}
+      onClose={toggleSettingsModal}
+      onDeleteAccount={handleDeleteAccount}
+      onModifyUserData={handleModifyUserData}
+    />
+
+    <footer className="w-full">
+      <img
+        src="/images/Logo_Nombre_Proyecto.png"
+        alt="Footer completo"
+        className="w-full"
+      />
+    </footer>
+  </div>
+);
+
+
 };
 
 export default Profile;

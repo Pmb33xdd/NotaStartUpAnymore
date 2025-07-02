@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { VERIFY_EMAIL_URL } from '../urls';
 
 const VerifyAccount: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -16,10 +17,14 @@ const VerifyAccount: React.FC = () => {
   }, []);
 
   const handleVerify = async () => {
+
+    if (!token) {
+    setError('Token no proporcionado');
+    return;
+    }
+    
     try {
-      const response = await fetch(
-        `https://notastartupanymore.onrender.com/users/verify-email?token=${token}`
-      );
+      const response = await fetch(VERIFY_EMAIL_URL(token));
 
       if (!response.ok) {
         const errorData = await response.json();

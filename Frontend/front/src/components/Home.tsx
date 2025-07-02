@@ -27,7 +27,6 @@ const Home: React.FC = () => {
         e.preventDefault();
         setResponse("");
 
-         // Validación: Todos los campos deben estar llenos
         if (!formData.name.trim() || !formData.mail.trim() || !formData.message.trim()) {
             setResponse("Todos los campos son obligatorios.");
             return;
@@ -38,9 +37,10 @@ const Home: React.FC = () => {
         try {
             const res = await fetch(ENVIAR_CORREO_CONTACTANOS_URL, {
                 method: "POST",
-                headers: { "Content-Type": "application/json",
-                           'access_token': API_KEY,
-                 },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "access_token": API_KEY,
+                },
                 body: JSON.stringify(formData),
             });
 
@@ -59,7 +59,7 @@ const Home: React.FC = () => {
     };
 
     return (
-        <div className="relative w-full overflow-y-auto font-sans">
+        <div className="relative w-full overflow-y-auto font-sans bg-purple-100 min-h-screen">
             <div className="relative w-full h-screen">
                 <video autoPlay muted loop className="absolute top-0 left-0 w-full h-full object-cover brightness-75">
                     <source src="/videos/Startup_video.mp4" type="video/mp4" />
@@ -81,11 +81,10 @@ const Home: React.FC = () => {
                 </div>
             </div>
 
-            {/* Sección ¿Qué Hacemos? */}
-            <section ref={queHacemosRef} id="que-hacemos" className="bg-purple-100 py-16 px-6">
+            <section ref={queHacemosRef} id="que-hacemos" className="py-16 px-6 max-w-7xl mx-auto">
                 <h2 className="text-4xl font-bold text-center mb-8 text-gray-800">¿Qué hacemos?</h2>
-                <div className="container mx-auto grid md:grid-cols-2 gap-8 items-center">
-                    <div className="bg-white p-8 rounded-lg shadow-lg">
+                <div className="grid md:grid-cols-2 gap-8 items-center">
+                    <div className="p-8 rounded-lg shadow-lg bg-purple-100">
                         <p className="text-lg text-gray-700">
                             En <strong>NotAStartUpAnymore</strong>, te ofrecemos información precisa y actualizada sobre las empresas que están transformando el panorama empresarial.
                         </p>
@@ -101,10 +100,9 @@ const Home: React.FC = () => {
                 </div>
             </section>
 
-            {/* Sección Contáctanos */}
-            <section ref={contactanosRef} id="contactanos" className="bg-purple-100 py-16 px-6">
+            <section ref={contactanosRef} id="contactanos" className="py-16 px-6 max-w-md mx-auto">
                 <h2 className="text-4xl font-bold text-center mb-8 text-gray-800">Contáctanos</h2>
-                <div className="container mx-auto max-w-lg bg-gray-100 p-8 rounded-lg shadow-lg">
+                <div className="p-8 rounded-lg shadow-lg bg-purple-100">
                     <div className="text-lg text-gray-700 text-center mb-6">
                         <p>
                             ¿Quieres saber más sobre cómo podemos ayudarte a identificar a las empresas que están marcando la diferencia? ¡Contáctanos y descubre el poder de la información!
@@ -121,9 +119,9 @@ const Home: React.FC = () => {
                     </div>
                 </div>
             </section>
-            
+
             <footer className="w-full">
-                <img src="/images/Logo_Nombre_Proyecto.png" alt="Footer completo" className="w-full h-screen bg-purple-100 object-cover"/>
+                <img src="/images/Logo_Nombre_Proyecto.png" alt="Footer completo" className="w-full h-screen bg-purple-100 object-cover" />
             </footer>
         </div>
     );

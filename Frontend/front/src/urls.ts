@@ -9,6 +9,10 @@ export const REGISTER_URL = `${BASE_URL}/`;
 export const FILTROS_FETCH_URL = `${BASE_URL}/filters`;
 export const REPORT_URL = `${BASE_URL}/generate-pdf`;
 export const COMPANY_TYPES_URL = `${BASE_URL}/api/company-types`;
+export const VERIFY_EMAIL_URL = (token: string) => {
+  return `${BASE_URL}/verify-email?token=${encodeURIComponent(token)}`;
+};
+
 export const DATOS_GRAFICOS_URL = (params: Record<string, string>) => {
     const urlParams = new URLSearchParams(params).toString();
     return `${BASE_URL}/charts?${urlParams}`;

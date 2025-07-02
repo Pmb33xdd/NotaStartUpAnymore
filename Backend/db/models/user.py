@@ -26,7 +26,6 @@ class ReportFormData(BaseModel):
     tipoCreacion: bool
     tipoCambioSede: bool
     tipoCrecimiento: bool
-    tipoOtras: bool
     incluirGraficos: bool
     mail: Optional[str] = None
     message: Optional[str] = None

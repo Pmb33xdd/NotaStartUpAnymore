@@ -2,6 +2,7 @@
 import base64
 from collections import defaultdict
 from datetime import date, datetime, time
+from glob import escape
 from io import BytesIO
 from typing import List
 from fastapi import HTTPException
@@ -33,8 +34,9 @@ class ReportGenerator:
 
         fig, ax = plt.subplots()
         ax.bar(contador.keys(), contador.values(), color="#0077cc")
-        ax.set_title("Distribución de Noticias por Tipo")
-        ax.set_ylabel("Cantidad")
+        ax.set_title("Distribución de Noticias por Tipo", fontsize=14)
+        ax.set_ylabel("Cantidad", fontsize=12)
+        ax.grid(axis="y", linestyle="--", alpha=0.7)
         plt.xticks(rotation=15)
 
         buffer = BytesIO()
@@ -46,10 +48,7 @@ class ReportGenerator:
         return f'<img src="data:image/png;base64,{encoded}" width="500"/>'
     
     async def fetch_filtered_news(self, start_date: date, end_date: date, types: List[str]):
-        """
-        Obtiene las noticias filtradas por fecha y tipo desde la base de datos,
-        usando objetos datetime para la comparación.
-        """
+
         print(start_date)
         print(end_date)
 
@@ -76,9 +75,9 @@ class ReportGenerator:
         return results
 
     async def generate_pdf_report(self, form_data: ReportFormData):
-        """
-        Genera el informe PDF utilizando xhtml2pdf.
-        """
+
+        news_list = []
+
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -103,7 +102,6 @@ class ReportGenerator:
                     ("Creación de una nueva empresa", form_data.tipoCreacion),
                     ("Cambio de sede de una empresa", form_data.tipoCambioSede),
                     ("Contratación abundante de empleados por parte de una empresa", form_data.tipoCrecimiento),
-                    ("otras", form_data.tipoOtras),
                 ]
                 if seleccionado
             ]) or '<span class="italic">Ninguno seleccionado</span>'}</p>
@@ -115,7 +113,6 @@ class ReportGenerator:
                 ("Creación de una nueva empresa", form_data.tipoCreacion),
                 ("Cambio de sede de una empresa", form_data.tipoCambioSede),
                 ("Contratación abundante de empleados por parte de una empresa", form_data.tipoCrecimiento),
-                ("otras", form_data.tipoOtras),
             ]
             if seleccionado
         ]
@@ -125,7 +122,7 @@ class ReportGenerator:
             if news_list:
                 grouped_news = defaultdict(list)
                 for news in news_list:
-                    grouped_news[news.get("topic", "Otro")].append(news)
+                    grouped_news[escape(news.get("topic", "Otro"))].append(news)
 
                 html_content += "<h2>Noticias Encontradas:</h2>"
 
@@ -144,8 +141,8 @@ class ReportGenerator:
                             else:
                                 formatted_date = "Fecha desconocida"
                             html_content += (
-                                f'<li class="news-item">{news.get("title", "Sin título")} '
-                                f'({formatted_date}) - Empresa: {news.get("company", "Desconocida")} '
+                                f'<li class="news-item">{escape(news.get("title", "Sin título"))} '
+                                f'({formatted_date}) - Empresa: {escape(news.get("company", "Desconocida"))} '
                                 f'- <strong>URL:</strong> <a href="{news.get("url", "#")}" target="_blank" style="color:#0077cc; text-decoration:underline;">{news.get("url", "URL no disponible")}</a></li>'
                             )
                         html_content += "</ul>"
@@ -155,7 +152,7 @@ class ReportGenerator:
             html_content += '<p class="italic">No se seleccionaron tipos de noticias.</p>'
 
         if form_data.message:
-            html_content += f"<h2>Notas Adicionales:</h2><p>{form_data.message}</p>"
+            html_content += f"<h2>Notas Adicionales:</h2><p>{escape(form_data.message)}</p>"
 
         if form_data.incluirGraficos and news_list:
             grafico_html = self.generar_grafico(news_list)

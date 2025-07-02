@@ -31,13 +31,14 @@ queries = [
 explorador = Ingestion(rss_url)
 
 lista_urls = []
+explorador.data_ingestion_rss()
 
 for fuente in lista_urls:
     explorador.change_source_and_reset(fuente)
     explorador.data_ingestion_rss()
 
 for query in queries:
-    explorador.data_ingestion_google_news(query)
+    explorador.data_ingestion_newsAPI(query)
 
 print("\n#### Iniciando filtrado y almacenamiento final de noticias ####\n")
 

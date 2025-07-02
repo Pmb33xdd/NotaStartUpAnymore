@@ -6,7 +6,6 @@ interface ReportFormData {
     tipoCreacion: boolean;
     tipoCambioSede: boolean;
     tipoCrecimiento: boolean;
-    tipoOtras: boolean;
     incluirGraficos: boolean;
     mail: string;
     message: string;
@@ -24,7 +23,6 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ onGenerateReport }) =
         tipoCreacion: false,
         tipoCambioSede: false,
         tipoCrecimiento: false,
-        tipoOtras: false,
         incluirGraficos: false,
         mail: "",
         message: "",
@@ -53,7 +51,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ onGenerateReport }) =
             return;
         }
 
-        const isTipoSelected = reportFormData.tipoCreacion || reportFormData.tipoCambioSede || reportFormData.tipoCrecimiento || reportFormData.tipoOtras;
+        const isTipoSelected = reportFormData.tipoCreacion || reportFormData.tipoCambioSede || reportFormData.tipoCrecimiento;
         if (!isTipoSelected) {
             setResponse("Debes seleccionar al menos un tipo de noticia.");
             return;
@@ -75,7 +73,6 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ onGenerateReport }) =
                 tipoCreacion: false,
                 tipoCambioSede: false,
                 tipoCrecimiento: false,
-                tipoOtras: false,
                 incluirGraficos: false,
                 mail: "",
                 message: "",
