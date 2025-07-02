@@ -2,7 +2,7 @@
 import base64
 from collections import defaultdict
 from datetime import date, datetime, time
-from glob import escape
+from html import escape
 from io import BytesIO
 from typing import List
 from fastapi import HTTPException
