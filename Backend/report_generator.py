@@ -140,11 +140,20 @@ class ReportGenerator:
                                     formatted_date = str(formatted_date)
                             else:
                                 formatted_date = "Fecha desconocida"
+                            
+                            urls_raw = news.get("url", "")
+                            urls = urls_raw.split("||")
+                            formatted_urls = "<br>".join(
+                                f'<a href="{url.strip()}" target="_blank" style="color:#0077cc; text-decoration:underline;">{escape(url.strip())}</a>'
+                                for url in urls if url.strip()
+                            )
+
                             html_content += (
                                 f'<li class="news-item">{escape(news.get("title", "Sin título"))} '
                                 f'({formatted_date}) - Empresa: {escape(news.get("company", "Desconocida"))} '
-                                f'- <strong>URL:</strong> <a href="{news.get("url", "#")}" target="_blank" style="color:#0077cc; text-decoration:underline;">{news.get("url", "URL no disponible")}</a></li>'
+                                f'- <strong>URL:</strong><br>{formatted_urls}</li>'
                             )
+                            
                         html_content += "</ul>"
             else:
                 html_content += '<p class="italic">No se encontraron noticias para los criterios seleccionados.</p>'
